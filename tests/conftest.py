@@ -11,14 +11,14 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from symphony.agents.base import AgentConfig, ReactiveAgent
-from symphony.llm.base import MockLLMClient, BaseLLMClient
+from symphony.llm.base import MockLLMClient, LLMClient
 from symphony.prompts.registry import PromptRegistry
 from symphony.memory.base import BaseMemory
 from symphony.memory.vector_memory import VectorMemory
 from symphony.memory.local_kg_memory import (
     LocalKnowledgeGraphMemory, SimpleEmbeddingModel
 )
-from symphony.tools.base import Tool, BaseTool
+from symphony.tools.base import Tool
 
 
 @pytest.fixture
@@ -84,33 +84,26 @@ def kg_memory(mock_llm_client) -> LocalKnowledgeGraphMemory:
 
 
 @pytest.fixture
-def mock_tool() -> BaseTool:
+def mock_tool() -> Tool:
     """Create a mock tool for testing."""
-    class MockTool(BaseTool):
+    class MockTool:
         def __init__(self):
-            super().__init__(
-                name="mock_tool",
-                description="A mock tool for testing",
-                parameters={
-                    "param1": {
-                        "type": "string",
-                        "description": "A test parameter"
-                    },
-                    "param2": {
-                        "type": "integer",
-                        "description": "Another test parameter"
-                    }
-                }
-            )
+            self.name = "mock_tool"
+            self.description = "A mock tool for testing"
             self.call_count = 0
             self.last_args = None
-        
-        async def _execute(self, **kwargs):
+            
+        async def execute(self, **kwargs):
             self.call_count += 1
             self.last_args = kwargs
             return f"Executed mock tool with args: {kwargs}"
     
-    return MockTool()
+    mt = MockTool()
+    return Tool(
+        name=mt.name,
+        description=mt.description,
+        function=mt.execute
+    )
 
 
 @pytest.fixture

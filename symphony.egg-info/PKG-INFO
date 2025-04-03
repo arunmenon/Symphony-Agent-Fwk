@@ -1,0 +1,240 @@
+Metadata-Version: 2.4
+Name: symphony
+Version: 0.1.0
+Summary: Next-Generation Agentic Framework
+Author: Symphony Team
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: tiktoken
+Requires-Dist: PyYAML
+Requires-Dist: mcp>=0.1.0
+Requires-Dist: litellm>=1.0.0
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-asyncio; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: black; extra == "dev"
+Provides-Extra: openai
+Requires-Dist: openai>=1.0.0; extra == "openai"
+Provides-Extra: anthropic
+Requires-Dist: anthropic; extra == "anthropic"
+Provides-Extra: cli
+Requires-Dist: mcp[cli]; extra == "cli"
+
+# Symphony: Next-Generation Agentic Framework
+
+Symphony is an advanced, modular framework for building complex AI agent systems. It provides a unified approach to creating, orchestrating, and managing multiple AI agents, with powerful integration with the Model Context Protocol (MCP) for standardized context management and LiteLLM for multi-provider LLM support.
+
+## Key Features
+
+- **Multiple Agent Architectures**: Support for reactive agents, planning agents, and DAG-based workflows.
+- **Multi-Agent Orchestration**: Coordinate multiple agents working together to solve complex tasks.
+- **MCP Integration**: First-class support for the Model Context Protocol, providing standardized context management.
+- **LiteLLM Integration**: Seamless integration with over 100+ LLM providers through a unified interface.
+- **Prompt Management System**: Centralized registry for prompts with version control and hierarchical overrides.
+- **Modular Plugin Architecture**: Extend with custom tools, memory implementations, LLM backends, and more.
+- **Type-Safe Interactions**: Built on Pydantic models for robust data validation.
+
+## Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/arunmenon/Symphony-Agent-Fwk.git
+cd Symphony-Agent-Fwk
+
+# Install in development mode
+pip install -e .
+
+# Install optional dependencies
+pip install -e ".[dev,openai,anthropic,cli]"
+```
+
+## Quick Start
+
+Here's a simple example of creating and running a reactive agent with MCP and LiteLLM integration:
+
+```python
+from symphony.agents.base import AgentConfig, ReactiveAgent
+from symphony.llm.litellm_client import LiteLLMClient, LiteLLMConfig
+from symphony.mcp.base import MCPManager
+from symphony.prompts.registry import PromptRegistry
+from symphony.tools.base import tool
+
+# Define a tool
+@tool(name="calculator", description="Perform calculations")
+def calculator(operation: str, a: float, b: float) -> float:
+    if operation == "add":
+        return a + b
+    # ... handle other operations
+
+# Create components
+registry = PromptRegistry()
+registry.register_prompt(
+    prompt_type="system",
+    content="You are a helpful assistant with calculation abilities.",
+    agent_type="CalculatorAgent"
+)
+
+# Configure LiteLLM client
+llm_config = LiteLLMConfig(
+    model="openai/gpt-4",  # Format: "provider/model_name"
+    max_tokens=500,
+    temperature=0.7
+)
+llm_client = LiteLLMClient(config=llm_config)
+
+# Create and run agent
+agent_config = AgentConfig(
+    name="Calculator",
+    agent_type="CalculatorAgent",
+    tools=["calculator"],
+    mcp_enabled=True
+)
+
+agent = ReactiveAgent(
+    config=agent_config,
+    llm_client=llm_client,
+    prompt_registry=registry,
+    mcp_manager=MCPManager()
+)
+
+# Run the agent asynchronously
+async def main():
+    response = await agent.run("Calculate 2 + 2")
+    print(response)
+
+import asyncio
+asyncio.run(main())
+```
+
+## Core Concepts
+
+### LiteLLM Integration
+
+Symphony integrates with LiteLLM to provide a unified interface for over 100+ LLM providers:
+
+- **Unified API**: Consistent interface across OpenAI, Anthropic, Azure, Cohere, and many more
+- **Simple Provider Switching**: Easily switch between models with minimal code changes
+- **Advanced Features**: Streaming, function calling, and async support
+
+```python
+from symphony.llm.litellm_client import LiteLLMClient, LiteLLMConfig
+
+# OpenAI configuration
+openai_config = LiteLLMConfig(
+    model="openai/gpt-4",
+    max_tokens=500
+)
+
+# Anthropic configuration
+anthropic_config = LiteLLMConfig(
+    model="anthropic/claude-3-sonnet",
+    max_tokens=500
+)
+
+# Create clients for different providers
+openai_client = LiteLLMClient(config=openai_config)
+anthropic_client = LiteLLMClient(config=anthropic_config)
+
+# Use the same agent code with different LLM backends
+agent_openai = ReactiveAgent(
+    config=agent_config,
+    llm_client=openai_client,
+    prompt_registry=registry
+)
+
+agent_anthropic = ReactiveAgent(
+    config=agent_config,
+    llm_client=anthropic_client,
+    prompt_registry=registry
+)
+```
+
+### Model Context Protocol (MCP)
+
+Symphony integrates with the official Model Context Protocol (MCP) for standardized context management:
+
+- **Resources**: Access to structured data via URI schemes
+- **Tools**: Standardized function calling capabilities
+- **Context Management**: Dynamic context assembly
+
+```python
+from symphony.mcp.base import MCPManager
+
+# Create MCP manager
+mcp_manager = MCPManager()
+
+# Register custom resources
+@mcp_manager.mcp.resource("symphony://knowledge/{topic}")
+def get_knowledge(topic: str, ctx: Context) -> str:
+    # Return knowledge for the topic
+    return knowledge_base.get(topic, "")
+
+# Register tools
+@mcp_manager.register_tool(name="calculate", description="Perform calculations")
+def calculate(ctx: Context, operation: str, a: float, b: float) -> float:
+    # Log the operation
+    ctx.info(f"Calculating {a} {operation} {b}")
+    # Perform calculation
+    # ...
+```
+
+### Agents
+
+Agents are the primary actors in Symphony. Each agent has:
+- A role or goal defined by a system prompt
+- Access to tools and memory
+- A specific architecture (reactive, planning, etc.)
+- Optional MCP integration
+
+### Tools
+
+Tools extend agent capabilities beyond text generation, allowing them to interact with external systems, process data, or perform specific actions.
+
+```python
+from symphony.tools.base import tool
+
+@tool(name="calculator", description="Perform calculations")
+def calculator(operation: str, a: float, b: float) -> float:
+    """Perform a basic arithmetic calculation."""
+    if operation == "add":
+        return a + b
+    # ... handle other operations
+```
+
+### Memory
+
+Memory allows agents to store and retrieve information, including conversation history, knowledge, and intermediate results.
+
+### Orchestration
+
+Orchestrators manage the execution flow between multiple agents, supporting patterns like:
+- Sequential execution
+- Round-robin turns
+- DAG-based workflows
+
+### Prompt Management System
+
+The Prompt Registry provides a centralized store for prompts with support for hierarchical overrides.
+
+## Examples
+
+The `examples/` directory contains complete examples demonstrating different aspects of the framework:
+
+- `simple_agent.py` - Basic reactive agent with tools
+- `planning_agent.py` - Agent that creates and follows a plan
+- `multi_agent.py` - Coordinating multiple agents
+- `dag_workflow.py` - Complex workflow using a directed acyclic graph
+- `mcp_integration.py` - Integration with Model Context Protocol
+- `litellm_integration.py` - Using different LLM providers with LiteLLM
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
