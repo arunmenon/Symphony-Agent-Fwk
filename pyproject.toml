@@ -22,6 +22,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
     "mypy",
     "ruff",
     "black",
@@ -42,3 +44,16 @@ disallow_incomplete_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--cov=symphony --cov-report=term-missing"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Tests that might be slow",
+    "memory: Tests related to memory components",
+    "agents: Tests related to agent components",
+    "kg: Tests related to knowledge graph components",
+    "dag: Tests related to DAG workflows",
+    "orchestration: Tests related to agent orchestration",
+    "tools: Tests related to tools",
+]
