@@ -103,7 +103,7 @@ class VectorMemory(BaseMemory):
         if persist_path and load_on_init and os.path.exists(persist_path):
             self.load()
     
-    def store(self, key: str, value: Any) -> None:
+    async def store(self, key: str, value: Any) -> None:
         """Store a value in memory with the given key."""
         content = str(value)
         
@@ -122,7 +122,7 @@ class VectorMemory(BaseMemory):
         if self.persist_path:
             self.save()
     
-    def retrieve(self, key: str) -> Optional[Any]:
+    async def retrieve(self, key: str) -> Optional[Any]:
         """Retrieve a value from memory by key."""
         entry = self.entries.get(key)
         return entry.content if entry else None

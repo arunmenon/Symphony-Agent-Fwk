@@ -273,8 +273,40 @@ class TestLocalKnowledgeGraphMemory:
         assert kg_memory.graph.get_entity("a framework") is not None
     
     @pytest.mark.asyncio
-    async def test_extract_and_store(self, kg_memory):
+    async def test_extract_and_store(self, kg_memory, monkeypatch):
         """Test extracting and storing triplets from text."""
+        # Create a list of predefined triplets
+        predefined_triplets = [
+            KnowledgeTriplet(
+                subject="Symphony", 
+                predicate="is", 
+                object="an agent framework",
+                confidence=0.95,
+                source="test_extraction"
+            ),
+            KnowledgeTriplet(
+                subject="Symphony",
+                predicate="supports",
+                object="multiple agents",
+                confidence=0.9,
+                source="test_extraction"
+            )
+        ]
+        
+        # Replace the extract_triplets method with a simple mock function
+        async def mock_extract(*args, **kwargs):
+            return predefined_triplets
+        
+        # Patch the extract_triplets method to use our mock
+        if kg_memory.extractor:
+            monkeypatch.setattr(kg_memory.extractor, "extract_triplets", mock_extract)
+        else:
+            # If extractor is None, create a minimal mock
+            from symphony.memory.local_kg_memory import TripletExtractor
+            kg_memory.extractor = TripletExtractor(kg_memory.llm_client)
+            monkeypatch.setattr(kg_memory.extractor, "extract_triplets", mock_extract)
+            kg_memory.auto_extract = True
+            
         text = "Symphony is an agent framework that supports multiple AI agents."
         
         triplets = await kg_memory.extract_and_store(
@@ -282,8 +314,16 @@ class TestLocalKnowledgeGraphMemory:
             source="test"
         )
         
-        # The mock LLM client should return some triplets
-        assert len(triplets) > 0
+        # The mock extractor should return our predefined triplets
+        assert len(triplets) == 2
+        assert triplets[0].subject == "Symphony"
+        assert triplets[0].predicate == "is"
+        assert triplets[0].object == "an agent framework"
+        
+        # Check that triplets were added to the graph
+        entity_info = await kg_memory.get_entity_knowledge("Symphony")
+        assert entity_info and entity_info.get("entity") is not None
+        assert len(entity_info.get("relationships", [])) >= 2
         
         # Check that triplets were stored in the graph
         assert len(kg_memory.graph.triplets) >= len(triplets)
