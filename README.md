@@ -1,16 +1,16 @@
 # Symphony: Next-Generation Agentic Framework
 
-Symphony is an advanced, modular framework for building complex AI agent systems. It provides a unified approach to creating, orchestrating, and managing multiple AI agents, with powerful integration with the Model Context Protocol (MCP) for standardized context management.
+Symphony is an advanced, modular framework for building complex AI agent systems. It provides a unified approach to creating, orchestrating, and managing multiple AI agents, with powerful integration with the Model Context Protocol (MCP) for standardized context management and LiteLLM for multi-provider LLM support.
 
 ## Key Features
 
 - **Multiple Agent Architectures**: Support for reactive agents, planning agents, and DAG-based workflows.
 - **Multi-Agent Orchestration**: Coordinate multiple agents working together to solve complex tasks.
 - **MCP Integration**: First-class support for the Model Context Protocol, providing standardized context management.
+- **LiteLLM Integration**: Seamless integration with over 100+ LLM providers through a unified interface.
 - **Prompt Management System**: Centralized registry for prompts with version control and hierarchical overrides.
 - **Modular Plugin Architecture**: Extend with custom tools, memory implementations, LLM backends, and more.
 - **Type-Safe Interactions**: Built on Pydantic models for robust data validation.
-- **Model-Agnostic**: Works with any LLM implementation through a unified interface.
 
 ## Installation
 
@@ -28,16 +28,16 @@ pip install -e ".[dev,openai,anthropic,cli]"
 
 ## Quick Start
 
-Here's a simple example of creating and running a reactive agent with MCP integration:
+Here's a simple example of creating and running a reactive agent with MCP and LiteLLM integration:
 
 ```python
 from symphony.agents.base import AgentConfig, ReactiveAgent
-from symphony.llm.base import MockLLMClient
+from symphony.llm.litellm_client import LiteLLMClient, LiteLLMConfig
 from symphony.mcp.base import MCPManager
 from symphony.prompts.registry import PromptRegistry
 from symphony.tools.base import tool
 
-# Define a tool that will be exposed through MCP
+# Define a tool
 @tool(name="calculator", description="Perform calculations")
 def calculator(operation: str, a: float, b: float) -> float:
     if operation == "add":
@@ -48,17 +48,22 @@ def calculator(operation: str, a: float, b: float) -> float:
 registry = PromptRegistry()
 registry.register_prompt(
     prompt_type="system",
-    content="You are a helpful assistant with MCP capabilities.",
-    agent_type="ReactiveAgent"
+    content="You are a helpful assistant with calculation abilities.",
+    agent_type="CalculatorAgent"
 )
 
-llm_client = MockLLMClient()
-mcp_manager = MCPManager()
+# Configure LiteLLM client
+llm_config = LiteLLMConfig(
+    model="openai/gpt-4",  # Format: "provider/model_name"
+    max_tokens=500,
+    temperature=0.7
+)
+llm_client = LiteLLMClient(config=llm_config)
 
 # Create and run agent
 agent_config = AgentConfig(
-    name="MyAssistant",
-    agent_type="ReactiveAgent",
+    name="Calculator",
+    agent_type="CalculatorAgent",
     tools=["calculator"],
     mcp_enabled=True
 )
@@ -67,7 +72,7 @@ agent = ReactiveAgent(
     config=agent_config,
     llm_client=llm_client,
     prompt_registry=registry,
-    mcp_manager=mcp_manager
+    mcp_manager=MCPManager()
 )
 
 # Run the agent asynchronously
@@ -81,9 +86,50 @@ asyncio.run(main())
 
 ## Core Concepts
 
+### LiteLLM Integration
+
+Symphony integrates with LiteLLM to provide a unified interface for over 100+ LLM providers:
+
+- **Unified API**: Consistent interface across OpenAI, Anthropic, Azure, Cohere, and many more
+- **Simple Provider Switching**: Easily switch between models with minimal code changes
+- **Advanced Features**: Streaming, function calling, and async support
+
+```python
+from symphony.llm.litellm_client import LiteLLMClient, LiteLLMConfig
+
+# OpenAI configuration
+openai_config = LiteLLMConfig(
+    model="openai/gpt-4",
+    max_tokens=500
+)
+
+# Anthropic configuration
+anthropic_config = LiteLLMConfig(
+    model="anthropic/claude-3-sonnet",
+    max_tokens=500
+)
+
+# Create clients for different providers
+openai_client = LiteLLMClient(config=openai_config)
+anthropic_client = LiteLLMClient(config=anthropic_config)
+
+# Use the same agent code with different LLM backends
+agent_openai = ReactiveAgent(
+    config=agent_config,
+    llm_client=openai_client,
+    prompt_registry=registry
+)
+
+agent_anthropic = ReactiveAgent(
+    config=agent_config,
+    llm_client=anthropic_client,
+    prompt_registry=registry
+)
+```
+
 ### Model Context Protocol (MCP)
 
-Symphony integrates with the official Model Context Protocol (MCP) for standardized context management. This provides:
+Symphony integrates with the official Model Context Protocol (MCP) for standardized context management:
 
 - **Resources**: Access to structured data via URI schemes
 - **Tools**: Standardized function calling capabilities
@@ -137,14 +183,6 @@ def calculator(operation: str, a: float, b: float) -> float:
 
 Memory allows agents to store and retrieve information, including conversation history, knowledge, and intermediate results.
 
-```python
-from symphony.memory.base import ConversationMemory
-
-memory = ConversationMemory()
-memory.add_message(Message(role="user", content="Hello!"))
-recent_messages = memory.get_messages(limit=5)
-```
-
 ### Orchestration
 
 Orchestrators manage the execution flow between multiple agents, supporting patterns like:
@@ -152,41 +190,9 @@ Orchestrators manage the execution flow between multiple agents, supporting patt
 - Round-robin turns
 - DAG-based workflows
 
-```python
-from symphony.orchestration.base import MultiAgentOrchestrator
-
-orchestrator = MultiAgentOrchestrator(
-    config=orchestrator_config,
-    llm_client=llm_client,
-    prompt_registry=registry,
-    turn_type=TurnType.SEQUENTIAL
-)
-
-result = await orchestrator.run("Analyze this data and write a report.")
-```
-
 ### Prompt Management System
 
-The Prompt Registry provides a centralized store for prompts with support for hierarchical overrides:
-
-```python
-from symphony.prompts.registry import PromptRegistry
-
-registry = PromptRegistry("prompts.yaml")
-registry.register_prompt(
-    prompt_type="system",
-    content="You are an expert researcher.",
-    agent_type="ResearchAgent",
-    agent_instance="ResearcherAlice"  # Optional instance-specific override
-)
-
-# Later, retrieve the prompt (instance → type → global fallback)
-prompt = registry.get_prompt(
-    prompt_type="system",
-    agent_type="ResearchAgent",
-    agent_instance="ResearcherAlice"
-)
-```
+The Prompt Registry provides a centralized store for prompts with support for hierarchical overrides.
 
 ## Examples
 
@@ -197,6 +203,7 @@ The `examples/` directory contains complete examples demonstrating different asp
 - `multi_agent.py` - Coordinating multiple agents
 - `dag_workflow.py` - Complex workflow using a directed acyclic graph
 - `mcp_integration.py` - Integration with Model Context Protocol
+- `litellm_integration.py` - Using different LLM providers with LiteLLM
 
 ## Contributing
 

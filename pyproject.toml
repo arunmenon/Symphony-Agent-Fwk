@@ -16,6 +16,7 @@ dependencies = [
     "tiktoken",
     "PyYAML",
     "mcp>=0.1.0",  # Model Context Protocol (MCP) official SDK
+    "litellm>=1.0.0",  # Unified interface for multiple LLM providers
 ]
 
 [project.optional-dependencies]
