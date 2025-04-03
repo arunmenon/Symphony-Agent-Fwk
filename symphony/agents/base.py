@@ -5,14 +5,15 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Set, Type, Union
 
+from mcp.server.fastmcp import Context
 from pydantic import BaseModel, Field
 
 from symphony.llm.base import LLMClient
-from symphony.mcp.base import ContextComposer, ContextComposerConfig
+from symphony.mcp.base import MCPManager
 from symphony.memory.base import BaseMemory, ConversationMemory
 from symphony.prompts.registry import PromptRegistry
 from symphony.tools.base import Tool, ToolRegistry
-from symphony.utils.types import ContextItem, Message
+from symphony.utils.types import Message
 
 
 class AgentConfig(BaseModel):
@@ -25,7 +26,7 @@ class AgentConfig(BaseModel):
     max_tokens: int = 4000
     memory_cls: Optional[Type[BaseMemory]] = None
     tools: List[str] = Field(default_factory=list)
-    context_composer_config: Optional[ContextComposerConfig] = None
+    mcp_enabled: bool = True
 
 
 class AgentBase(ABC):
@@ -37,6 +38,7 @@ class AgentBase(ABC):
         llm_client: LLMClient,
         prompt_registry: PromptRegistry,
         memory: Optional[BaseMemory] = None,
+        mcp_manager: Optional[MCPManager] = None,
     ):
         self.id = str(uuid.uuid4())
         self.config = config
@@ -54,11 +56,22 @@ class AgentBase(ABC):
             if tool:
                 self.tools[tool_name] = tool
         
-        # Initialize context composer
-        self.context_composer = ContextComposer(config.context_composer_config)
+        # Initialize MCP
+        self.mcp_manager = mcp_manager or MCPManager()
+        
+        # Register tools with MCP if enabled
+        if self.config.mcp_enabled:
+            self._register_tools_with_mcp()
         
         # Load system prompt
         self._load_system_prompt()
+    
+    def _register_tools_with_mcp(self) -> None:
+        """Register Symphony tools with MCP."""
+        for name, tool in self.tools.items():
+            @self.mcp_manager.register_tool(name=name, description=tool.description)
+            def tool_handler(ctx: Context, **kwargs: Any) -> Any:
+                return tool(**kwargs)
     
     def _load_system_prompt(self) -> None:
         """Load the system prompt from the registry."""
@@ -84,17 +97,28 @@ class AgentBase(ABC):
         if isinstance(self.memory, ConversationMemory):
             self.memory.add_message(message)
         
-        # Get context from memory
-        context_items = self._get_context_items()
-        
-        # Assemble context using MCP
-        messages = self.context_composer.assemble_context(
-            system_prompt=self.system_prompt,
-            context_items=context_items
+        # Get messages from memory
+        messages = (
+            self.memory.get_messages() 
+            if isinstance(self.memory, ConversationMemory) 
+            else [message]
         )
         
-        # Call LLM
-        response = await self.decide_action(messages)
+        # If using MCP, prepare context
+        mcp_context = None
+        if self.config.mcp_enabled:
+            mcp_context = self.mcp_manager.get_context()
+            agent_state = self._get_agent_state()
+            mcp_context = self.mcp_manager.prepare_agent_context(
+                ctx=mcp_context,
+                system_prompt=self.system_prompt,
+                messages=messages,
+                agent_id=self.id,
+                agent_state=agent_state
+            )
+        
+        # Call decide_action with or without MCP context
+        response = await self.decide_action(messages, mcp_context)
         
         # Add response to memory
         if isinstance(self.memory, ConversationMemory):
@@ -102,30 +126,29 @@ class AgentBase(ABC):
             
         return response.content
     
-    def _get_context_items(self) -> List[ContextItem]:
-        """Get context items from memory and other sources."""
-        items: List[ContextItem] = []
+    def _get_agent_state(self) -> Dict[str, Any]:
+        """Get the current agent state for MCP context."""
+        state = {
+            "id": self.id,
+            "name": self.config.name,
+            "agent_type": self.config.agent_type
+        }
         
-        # Get conversation history if available
-        if isinstance(self.memory, ConversationMemory):
-            items.extend(self.memory.to_context_items())
-        
-        # Add tool descriptions if any
+        # Add tools info
         if self.tools:
-            tool_descriptions = "\n".join([
-                f"- {name}: {tool.description}" 
+            state["tools"] = [
+                {"name": name, "description": tool.description}
                 for name, tool in self.tools.items()
-            ])
-            items.append(ContextItem(
-                content=f"You have access to the following tools:\n{tool_descriptions}",
-                importance=1.5,  # Higher importance for tools
-                metadata={"type": "tools"}
-            ))
-        
-        return items
+            ]
+            
+        return state
     
     @abstractmethod
-    async def decide_action(self, messages: List[Message]) -> Message:
+    async def decide_action(
+        self, 
+        messages: List[Message], 
+        mcp_context: Optional[Context] = None
+    ) -> Message:
         """Decide what action to take given the current context."""
         pass
     
@@ -141,7 +164,16 @@ class AgentBase(ABC):
 class ReactiveAgent(AgentBase):
     """A simple reactive agent that responds to messages directly."""
     
-    async def decide_action(self, messages: List[Message]) -> Message:
+    async def decide_action(
+        self, 
+        messages: List[Message], 
+        mcp_context: Optional[Context] = None
+    ) -> Message:
         """Decide what action to take given the current context."""
         # For a reactive agent, just call the LLM directly
-        return await self.llm_client.chat(messages)
+        # If using MCP, we'd provide the context to the LLM client
+        if mcp_context is not None and self.config.mcp_enabled:
+            # In a real implementation, the LLM client would use the MCP context
+            return await self.llm_client.chat_with_mcp(messages, mcp_context)
+        else:
+            return await self.llm_client.chat(messages)

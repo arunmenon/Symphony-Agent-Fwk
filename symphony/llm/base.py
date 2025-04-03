@@ -4,6 +4,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
+from mcp.server.fastmcp import Context
 from symphony.utils.types import Message
 
 
@@ -18,6 +19,16 @@ class LLMClient(ABC):
     @abstractmethod
     async def chat(self, messages: List[Message], **kwargs: Any) -> Message:
         """Generate a response to a list of chat messages."""
+        pass
+    
+    @abstractmethod
+    async def chat_with_mcp(
+        self, 
+        messages: List[Message], 
+        mcp_context: Context,
+        **kwargs: Any
+    ) -> Message:
+        """Generate a response to chat messages with MCP context."""
         pass
     
     @abstractmethod
@@ -62,6 +73,23 @@ class MockLLMClient(LLMClient):
         return Message(
             role="assistant",
             content=f"Mock response to: {last_message.content[:20]}..."
+        )
+    
+    async def chat_with_mcp(
+        self, 
+        messages: List[Message], 
+        mcp_context: Context,
+        **kwargs: Any
+    ) -> Message:
+        """Generate a response to chat messages with MCP context."""
+        # For mock, just use the same logic as chat but note MCP usage
+        response = await self.chat(messages, **kwargs)
+        
+        # In a real implementation, we would use the MCP context here
+        # For mock, just add a note about MCP being used
+        return Message(
+            role="assistant",
+            content=f"{response.content}\n\n[Used MCP context]"
         )
     
     async def stream_chat(
