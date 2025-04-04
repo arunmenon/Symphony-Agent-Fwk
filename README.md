@@ -6,6 +6,7 @@ Symphony is an advanced, modular framework for building complex AI agent systems
 
 - **Multiple Agent Architectures**: Support for reactive agents, planning agents, and DAG-based workflows.
 - **Multi-Agent Orchestration**: Coordinate multiple agents working together to solve complex tasks.
+- **Patterns Library**: Reusable interaction patterns like chain-of-thought, reflection, and multi-agent collaboration.
 - **MCP Integration**: First-class support for the Model Context Protocol, providing standardized context management.
 - **LiteLLM Integration**: Seamless integration with over 100+ LLM providers through a unified interface.
 - **Prompt Management System**: Centralized registry for prompts with version control and hierarchical overrides.
@@ -28,63 +29,96 @@ pip install -e ".[dev,openai,anthropic,cli]"
 
 ## Quick Start
 
-Here's a simple example of creating and running a reactive agent with MCP and LiteLLM integration:
+Here's a simple example of using Symphony with patterns:
 
 ```python
-from symphony.agents.base import AgentConfig, ReactiveAgent
-from symphony.llm.litellm_client import LiteLLMClient, LiteLLMConfig
-from symphony.mcp.base import MCPManager
-from symphony.prompts.registry import PromptRegistry
-from symphony.tools.base import tool
-
-# Define a tool
-@tool(name="calculator", description="Perform calculations")
-def calculator(operation: str, a: float, b: float) -> float:
-    if operation == "add":
-        return a + b
-    # ... handle other operations
-
-# Create components
-registry = PromptRegistry()
-registry.register_prompt(
-    prompt_type="system",
-    content="You are a helpful assistant with calculation abilities.",
-    agent_type="CalculatorAgent"
-)
-
-# Configure LiteLLM client
-llm_config = LiteLLMConfig(
-    model="openai/gpt-4",  # Format: "provider/model_name"
-    max_tokens=500,
-    temperature=0.7
-)
-llm_client = LiteLLMClient(config=llm_config)
-
-# Create and run agent
-agent_config = AgentConfig(
-    name="Calculator",
-    agent_type="CalculatorAgent",
-    tools=["calculator"],
-    mcp_enabled=True
-)
-
-agent = ReactiveAgent(
-    config=agent_config,
-    llm_client=llm_client,
-    prompt_registry=registry,
-    mcp_manager=MCPManager()
-)
-
-# Run the agent asynchronously
-async def main():
-    response = await agent.run("Calculate 2 + 2")
-    print(response)
-
 import asyncio
-asyncio.run(main())
+from symphony.api import Symphony
+from symphony.agents.config import AgentConfig
+
+async def main():
+    # Initialize Symphony
+    symphony = Symphony()
+    
+    # Create an agent
+    agent_config = AgentConfig(
+        name="reasoner",
+        description="An agent that can perform reasoning",
+        model="gpt-4-turbo"
+    )
+    agent_id = await symphony.agents.create_agent(agent_config)
+    
+    # Use a pattern for multi-step reasoning
+    result = await symphony.patterns.apply_reasoning_pattern(
+        "chain_of_thought",
+        "If a triangle has sides of length 3, 4, and 5, what is its area?",
+        config={"agent_roles": {"reasoner": agent_id}}
+    )
+    
+    print("Reasoning steps:")
+    for i, step in enumerate(result.get("steps", [])):
+        print(f"Step {i+1}: {step}")
+    
+    print(f"Final answer: {result.get('response')}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ## Core Concepts
+
+### Patterns Library
+
+Symphony includes a comprehensive Patterns Library that encapsulates common agent interaction patterns:
+
+#### Reasoning Patterns
+- **Chain of Thought**: Step-by-step reasoning for complex problems
+- **Step Back**: Take a strategic perspective before solving a problem
+
+#### Verification Patterns
+- **Critic Review**: One agent evaluates and critiques another's work
+- **Self-Consistency**: Generate multiple solutions and find consensus
+
+#### Multi-Agent Patterns
+- **Expert Panel**: Gather perspectives from multiple expert agents
+
+#### Tool Usage Patterns
+- **Multi-Tool Chain**: Sequence tools together in a workflow
+- **Verify-Execute**: Verify a tool usage plan before execution
+- **Recursive Tool Use**: Recursively decompose problems into tool-solvable parts
+
+#### Learning Patterns
+- **Few-Shot Learning**: Use examples to guide agent behavior
+- **Reflection**: Self-improve through reflection and revision
+- **Iterative Reflection**: Multiple rounds of reflection and improvement
+
+### Pattern Composition
+
+Patterns can be composed to create more complex behaviors:
+
+```python
+# Create individual patterns
+cot_pattern = symphony.patterns.create_pattern(
+    "chain_of_thought",
+    {"agent_roles": {"reasoner": agent_id}}
+)
+
+reflection_pattern = symphony.patterns.create_pattern(
+    "reflection",
+    {"agent_roles": {"performer": agent_id, "reflector": agent_id}}
+)
+
+# Compose sequentially
+composed_pattern = symphony.patterns.compose_sequential(
+    [cot_pattern, reflection_pattern],
+    name="reason_then_reflect"
+)
+
+# Execute the composed pattern
+result = await composed_pattern.run({
+    "query": "Explain quantum computing"
+})
+```
 
 ### LiteLLM Integration
 
@@ -94,39 +128,6 @@ Symphony integrates with LiteLLM to provide a unified interface for over 100+ LL
 - **Simple Provider Switching**: Easily switch between models with minimal code changes
 - **Advanced Features**: Streaming, function calling, and async support
 
-```python
-from symphony.llm.litellm_client import LiteLLMClient, LiteLLMConfig
-
-# OpenAI configuration
-openai_config = LiteLLMConfig(
-    model="openai/gpt-4",
-    max_tokens=500
-)
-
-# Anthropic configuration
-anthropic_config = LiteLLMConfig(
-    model="anthropic/claude-3-sonnet",
-    max_tokens=500
-)
-
-# Create clients for different providers
-openai_client = LiteLLMClient(config=openai_config)
-anthropic_client = LiteLLMClient(config=anthropic_config)
-
-# Use the same agent code with different LLM backends
-agent_openai = ReactiveAgent(
-    config=agent_config,
-    llm_client=openai_client,
-    prompt_registry=registry
-)
-
-agent_anthropic = ReactiveAgent(
-    config=agent_config,
-    llm_client=anthropic_client,
-    prompt_registry=registry
-)
-```
-
 ### Model Context Protocol (MCP)
 
 Symphony integrates with the official Model Context Protocol (MCP) for standardized context management:
@@ -134,27 +135,6 @@ Symphony integrates with the official Model Context Protocol (MCP) for standardi
 - **Resources**: Access to structured data via URI schemes
 - **Tools**: Standardized function calling capabilities
 - **Context Management**: Dynamic context assembly
-
-```python
-from symphony.mcp.base import MCPManager
-
-# Create MCP manager
-mcp_manager = MCPManager()
-
-# Register custom resources
-@mcp_manager.mcp.resource("symphony://knowledge/{topic}")
-def get_knowledge(topic: str, ctx: Context) -> str:
-    # Return knowledge for the topic
-    return knowledge_base.get(topic, "")
-
-# Register tools
-@mcp_manager.register_tool(name="calculate", description="Perform calculations")
-def calculate(ctx: Context, operation: str, a: float, b: float) -> float:
-    # Log the operation
-    ctx.info(f"Calculating {a} {operation} {b}")
-    # Perform calculation
-    # ...
-```
 
 ### Agents
 
@@ -168,21 +148,6 @@ Agents are the primary actors in Symphony. Each agent has:
 
 Tools extend agent capabilities beyond text generation, allowing them to interact with external systems, process data, or perform specific actions.
 
-```python
-from symphony.tools.base import tool
-
-@tool(name="calculator", description="Perform calculations")
-def calculator(operation: str, a: float, b: float) -> float:
-    """Perform a basic arithmetic calculation."""
-    if operation == "add":
-        return a + b
-    # ... handle other operations
-```
-
-### Memory
-
-Memory allows agents to store and retrieve information, including conversation history, knowledge, and intermediate results.
-
 ### Orchestration
 
 Orchestrators manage the execution flow between multiple agents, supporting patterns like:
@@ -190,20 +155,39 @@ Orchestrators manage the execution flow between multiple agents, supporting patt
 - Round-robin turns
 - DAG-based workflows
 
-### Prompt Management System
-
-The Prompt Registry provides a centralized store for prompts with support for hierarchical overrides.
-
 ## Examples
 
 The `examples/` directory contains complete examples demonstrating different aspects of the framework:
 
 - `simple_agent.py` - Basic reactive agent with tools
-- `planning_agent.py` - Agent that creates and follows a plan
+- `patterns_example.py` - Using reasoning, verification, and multi-agent patterns
+- `tool_usage_patterns_example.py` - Examples of tool usage patterns
+- `learning_patterns_example.py` - Examples of learning patterns
 - `multi_agent.py` - Coordinating multiple agents
 - `dag_workflow.py` - Complex workflow using a directed acyclic graph
-- `mcp_integration.py` - Integration with Model Context Protocol
-- `litellm_integration.py` - Using different LLM providers with LiteLLM
+
+## Testing
+
+### Unit Tests
+
+```bash
+pytest tests/unit
+```
+
+### Integration Tests
+
+Integration tests require API keys for the model providers you want to test with:
+
+1. Copy `.env.example` to `.env` and add your API keys
+2. Run the integration tests:
+
+```bash
+# Run all integration tests
+python scripts/run_integration_tests.py
+
+# Run tests for a specific pattern
+python scripts/run_integration_tests.py --pattern chain_of_thought
+```
 
 ## Contributing
 
