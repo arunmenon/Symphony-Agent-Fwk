@@ -20,10 +20,12 @@ from symphony.orchestration.workflow_definition import WorkflowDefinition
 from symphony.facade.agents import AgentFacade
 from symphony.facade.tasks import TaskFacade
 from symphony.facade.workflows import WorkflowFacade
+from symphony.patterns.facade import PatternsFacade
 
 from symphony.builder.agent_builder import AgentBuilder
 from symphony.builder.task_builder import TaskBuilder
 from symphony.builder.workflow_builder import WorkflowBuilder
+from symphony.patterns.builder import PatternBuilder
 
 
 class Symphony:
@@ -51,13 +53,15 @@ class Symphony:
         self._agent_facade = None
         self._task_facade = None
         self._workflow_facade = None
+        self._patterns_facade = None
     
-    async def setup(self, persistence_type: str = "memory", base_dir: str = "./data"):
+    async def setup(self, persistence_type: str = "memory", base_dir: str = "./data", with_patterns: bool = True):
         """Set up Symphony API with basic components.
         
         Args:
             persistence_type: Type of persistence ("memory" or "file")
             base_dir: Base directory for file storage (only used with "file" persistence)
+            with_patterns: Whether to register patterns library (default: True)
         """
         # Get persistence type from config if not provided
         if persistence_type is None:
@@ -93,6 +97,11 @@ class Symphony:
         # Register orchestration components
         from symphony.orchestration import register_orchestration_components
         register_orchestration_components(self.registry)
+        
+        # Register patterns if requested
+        if with_patterns:
+            from symphony.patterns import register_patterns
+            register_patterns(self.registry)
         
         return self
     
@@ -152,6 +161,25 @@ class Symphony:
             Workflow builder
         """
         return WorkflowBuilder(self.registry)
+    
+    @property
+    def patterns(self) -> PatternsFacade:
+        """Get patterns facade.
+        
+        Returns:
+            Patterns facade
+        """
+        if self._patterns_facade is None:
+            self._patterns_facade = PatternsFacade(self.registry)
+        return self._patterns_facade
+    
+    def build_pattern(self) -> PatternBuilder:
+        """Create a pattern builder.
+        
+        Returns:
+            Pattern builder
+        """
+        return PatternBuilder(self.registry)
     
     def get_registry(self) -> ServiceRegistry:
         """Get underlying service registry.
