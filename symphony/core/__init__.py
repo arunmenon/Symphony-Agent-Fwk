@@ -14,7 +14,7 @@ from symphony.core.exceptions import (
     ToolNotFoundError,
 )
 from symphony.core.factory import (
-    AgentFactory,
+    AgentFactory as CoreAgentFactory,
     LLMClientFactory,
     MCPManagerFactory,
     MemoryFactory,
@@ -29,6 +29,13 @@ from symphony.core.plugin import (
     PluginType,
     ToolPlugin,
 )
+
+# Import new persistence-related modules
+from symphony.core.task import Task, TaskStatus
+from symphony.core.agent_config import AgentConfig, AgentCapabilities
+from symphony.core.agent_factory import AgentFactory
+from symphony.core.task_manager import TaskManager
+from symphony.core.registry import ServiceRegistry
 
 
 class Symphony:

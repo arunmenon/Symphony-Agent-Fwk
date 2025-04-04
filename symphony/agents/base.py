@@ -177,3 +177,21 @@ class ReactiveAgent(AgentBase):
             return await self.llm_client.chat_with_mcp(messages, mcp_context)
         else:
             return await self.llm_client.chat(messages)
+
+
+class Agent:
+    """Simplified Agent class for testing."""
+    
+    def __init__(self, name="TestAgent", description="", system_prompt="You are a helpful assistant.", model="gpt-4", **kwargs):
+        self.name = name
+        self.description = description
+        self.system_prompt = system_prompt
+        self.model = model
+        
+        # Store any additional attributes
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+    async def run(self, query: str) -> str:
+        """Run the agent on a query and return a response."""
+        return f"Response to: {query}"
