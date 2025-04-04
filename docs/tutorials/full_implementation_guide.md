@@ -1,644 +1,343 @@
-# Symphony Implementation Guide
+## 4. API Layer
 
-This comprehensive guide demonstrates how to use the enhanced Symphony framework components we've implemented. The framework now includes three main layers that build on top of each other:
-
-1. **Persistence Layer**: Store and retrieve entities
-2. **Execution Layer**: Execute tasks with advanced capabilities
-3. **Orchestration Layer**: Define and run complex workflows
-
-Let's explore each layer with examples.
-
-## 1. Persistence Layer
-
-The Persistence Layer provides a unified abstraction for storing entities, with implementations for both in-memory and file-system storage.
+The API Layer provides a clean, user-friendly interface for working with Symphony components. It implements both the Facade and Builder patterns to hide implementation details and provide intuitive interfaces.
 
 ### Key Components
 
-- `Repository`: Abstract base class defining the CRUD operations
-- `InMemoryRepository`: Implementation using in-memory dictionaries
-- `FileSystemRepository`: Implementation using JSON files
+- `Symphony`: Main entry point and API facade
+- `Facade Classes`: Domain-specific interfaces that hide implementation details
+  - `AgentFacade`: Interface for agent operations
+  - `TaskFacade`: Interface for task operations
+  - `WorkflowFacade`: Interface for workflow operations
+- `Builder Classes`: Fluent interfaces for creating complex objects
+  - `AgentBuilder`: Builder for agent configurations
+  - `TaskBuilder`: Builder for tasks
+  - `WorkflowBuilder`: Builder for workflow definitions
 
-### Basic Usage
+### Using the Facade Pattern
 
-```python
-import asyncio
-from symphony.core.task import Task
-from symphony.persistence.memory_repository import InMemoryRepository
-from symphony.persistence.file_repository import FileSystemRepository
-
-async def persistence_example():
-    # Create repositories
-    memory_repo = InMemoryRepository(Task)
-    file_repo = FileSystemRepository(Task, "./data")
-    
-    # Create a task
-    task = Task(
-        name="Example Task",
-        description="This is an example task",
-        input_data={"query": "What is Symphony?"}
-    )
-    
-    # Save to memory repository
-    task_id = await memory_repo.save(task)
-    print(f"Task saved with ID: {task_id}")
-    
-    # Retrieve from memory repository
-    retrieved_task = await memory_repo.find_by_id(task_id)
-    print(f"Retrieved task: {retrieved_task.name}")
-    
-    # Save to file repository
-    file_task_id = await file_repo.save(task)
-    print(f"Task saved to file with ID: {file_task_id}")
-    
-    # Find all tasks
-    all_tasks = await file_repo.find_all()
-    print(f"Found {len(all_tasks)} tasks")
-
-# Run the example
-asyncio.run(persistence_example())
-```
-
-### Using with Agent Configurations
-
-```python
-from symphony.core.agent_config import AgentConfig, AgentCapabilities
-from symphony.persistence.file_repository import FileSystemRepository
-
-async def agent_config_example():
-    # Create repository for agent configurations
-    agent_config_repo = FileSystemRepository(AgentConfig, "./data")
-    
-    # Create agent configuration
-    writer_agent = AgentConfig(
-        name="WriterAgent",
-        role="Content Writer",
-        instruction_template="You are a creative content writer who excels at {{task_type}}.",
-        capabilities=AgentCapabilities(
-            expertise=["writing", "content", "creativity"]
-        )
-    )
-    
-    # Save configuration
-    agent_id = await agent_config_repo.save(writer_agent)
-    print(f"Agent configuration saved with ID: {agent_id}")
-    
-    # Retrieve configuration
-    retrieved_config = await agent_config_repo.find_by_id(agent_id)
-    print(f"Retrieved agent: {retrieved_config.name} with role: {retrieved_config.role}")
-    
-    # Update configuration
-    retrieved_config.capabilities.expertise.append("blogging")
-    await agent_config_repo.update(retrieved_config)
-    print("Updated agent capabilities")
-```
-
-## 2. Execution Layer
-
-The Execution Layer builds on the Persistence Layer to provide advanced execution capabilities.
-
-### Key Components
-
-- `EnhancedExecutor`: Advanced execution with persistence integration
-- `WorkflowTracker`: Tracks collections of related tasks
-- `TaskRouter`: Routes tasks to appropriate agents based on different strategies
-
-### Basic Task Execution
+The Facade Pattern provides a simplified interface for common operations:
 
 ```python
 import asyncio
-from symphony.core.registry import ServiceRegistry
-from symphony.core.task import Task
-from symphony.core.agent_config import AgentConfig, AgentCapabilities
-from symphony.agents.base import Agent
-from symphony.persistence.memory_repository import InMemoryRepository
+from symphony import Symphony
 
-async def execute_task_example():
-    # Set up registry
-    registry = ServiceRegistry.get_instance()
+async def facade_api_example():
+    """Demonstrate the Symphony API using facades."""
+    # Initialize Symphony
+    symphony = Symphony()
+    await symphony.setup(persistence_type="memory")
     
-    # Create repositories
-    task_repo = InMemoryRepository(Task)
-    agent_config_repo = InMemoryRepository(AgentConfig)
-    
-    # Register repositories
-    registry.register_repository("task", task_repo)
-    registry.register_repository("agent_config", agent_config_repo)
-    
-    # Create task manager and agent factory
-    task_manager = registry.get_task_manager()
-    agent_factory = registry.get_agent_factory()
-    
-    # Create agent configuration
-    writer_config = AgentConfig(
+    # Create and save an agent using the facade
+    agent_config = await symphony.agents.create_agent(
         name="WriterAgent",
         role="Content Writer",
-        instruction_template="You are a creative content writer.",
-        capabilities=AgentCapabilities(
-            expertise=["writing", "content", "creativity"]
-        )
+        instruction_template="You are a creative content writer who excels at generating engaging content.",
+        capabilities={"expertise": ["writing", "content", "creativity"]}
     )
-    await agent_config_repo.save(writer_config)
+    agent_id = await symphony.agents.save_agent(agent_config)
+    print(f"Created agent with ID: {agent_id}")
     
-    # Create a task
-    task = await task_manager.create_task(
+    # Create and execute a task using the facade
+    task = await symphony.tasks.create_task(
         name="Write Blog Post",
-        description="Write a short blog post about AI",
-        input_data={"query": "Write a short blog post about AI assistants"}
+        description="Write a blog post about AI",
+        input_data={"query": "Write a short blog post about the benefits of AI assistants in daily life."},
+        agent_id=agent_id
     )
+    task_id = await symphony.tasks.save_task(task)
     
-    # Create agent from configuration
-    agent = await agent_factory.create_agent_from_id(writer_config.id)
+    print("Executing task...")
+    task = await symphony.tasks.execute_task(task)
     
-    # Get enhanced executor
-    executor = registry.get_enhanced_executor()
+    # Check task result
+    print(f"Task status: {task.status}")
+    if task.status.value == "completed":
+        print("\nTask Result:")
+        print(task.result)
     
-    # Execute task
-    result_task = await executor.execute_task(task.id, agent)
-    
-    # Check result
-    if result_task.status == "completed":
-        print(f"Task completed successfully!")
-        print(f"Result: {result_task.output_data.get('result')}")
-    else:
-        print(f"Task failed: {result_task.error}")
-
-# Run the example
-asyncio.run(execute_task_example())
-```
-
-### Workflow Tracking
-
-```python
-import asyncio
-from symphony.core.registry import ServiceRegistry
-from symphony.execution.workflow_tracker import Workflow, WorkflowStatus
-
-async def workflow_tracking_example():
-    # Set up registry
-    registry = ServiceRegistry.get_instance()
-    
-    # Get workflow tracker
-    workflow_tracker = registry.get_workflow_tracker()
-    
-    # Create a workflow
-    workflow = await workflow_tracker.create_workflow(
-        name="Content Creation Workflow",
-        description="A workflow for creating and editing content"
-    )
-    print(f"Created workflow: {workflow.name} with ID: {workflow.id}")
-    
-    # Create tasks
-    task_manager = registry.get_task_manager()
-    writing_task = await task_manager.create_task(
-        name="Write Article",
-        description="Write an article about climate change",
-        input_data={"query": "Write an article about climate change"}
-    )
-    
-    editing_task = await task_manager.create_task(
-        name="Edit Article",
-        description="Edit the article for clarity and style",
-        input_data={"query": "Edit the article for clarity and style"}
-    )
-    
-    # Add tasks to workflow
-    await workflow_tracker.add_task_to_workflow(workflow.id, writing_task.id)
-    await workflow_tracker.add_task_to_workflow(workflow.id, editing_task.id)
-    
-    # Update workflow status
-    await workflow_tracker.update_workflow_status(workflow.id, WorkflowStatus.RUNNING)
-    
-    # Get workflow tasks
-    tasks = await workflow_tracker.get_workflow_tasks(workflow.id)
-    print(f"Workflow has {len(tasks)} tasks")
-    
-    # Execute tasks and update workflow
-    executor = registry.get_enhanced_executor()
-    agent_factory = registry.get_agent_factory()
-    
-    # Create agent
-    agent_config_repo = registry.get_repository("agent_config")
-    configs = await agent_config_repo.find_all()
-    agent = await agent_factory.create_agent_from_id(configs[0].id)
-    
-    # Execute writing task
-    await executor.execute_task(writing_task.id, agent, workflow.id)
-    
-    # Workflow status will be automatically updated by executor
-    updated_workflow = await workflow_tracker.get_workflow(workflow.id)
-    print(f"Workflow status after first task: {updated_workflow.status}")
-    
-    # Execute editing task
-    await executor.execute_task(editing_task.id, agent, workflow.id)
-    
-    # Check final workflow status
-    final_workflow = await workflow_tracker.get_workflow(workflow.id)
-    print(f"Final workflow status: {final_workflow.status}")
-
-# Run the example
-asyncio.run(workflow_tracking_example())
-```
-
-### Task Routing
-
-```python
-import asyncio
-from symphony.core.registry import ServiceRegistry
-from symphony.core.task import Task
-from symphony.core.agent_config import AgentConfig, AgentCapabilities
-from symphony.execution.router import RoutingStrategy
-
-async def task_routing_example():
-    # Set up registry
-    registry = ServiceRegistry.get_instance()
-    
-    # Get repositories
-    agent_config_repo = registry.get_repository("agent_config")
-    
-    # Create agent configurations
-    math_agent = AgentConfig(
-        name="MathAgent",
-        role="Mathematics Expert",
-        instruction_template="You are a mathematics expert.",
-        capabilities=AgentCapabilities(
-            expertise=["mathematics", "algebra", "calculations"]
-        )
-    )
-    
-    writing_agent = AgentConfig(
-        name="WritingAgent",
-        role="Content Writer",
-        instruction_template="You are a creative content writer.",
-        capabilities=AgentCapabilities(
-            expertise=["writing", "content", "creativity"]
-        )
-    )
-    
-    coding_agent = AgentConfig(
-        name="CodingAgent",
-        role="Software Developer",
-        instruction_template="You are a software developer.",
-        capabilities=AgentCapabilities(
-            expertise=["coding", "programming", "python"]
-        )
-    )
-    
-    # Save agent configurations
-    await agent_config_repo.save(math_agent)
-    await agent_config_repo.save(writing_agent)
-    await agent_config_repo.save(coding_agent)
-    
-    # Create tasks
-    task_manager = registry.get_task_manager()
-    
-    math_task = await task_manager.create_task(
-        name="Math Problem",
-        description="Solve a complex math problem",
-        input_data={"query": "Solve the equation: 3x^2 + 2x - 5 = 0"},
-        tags=["mathematics", "algebra"]
-    )
-    
-    writing_task = await task_manager.create_task(
-        name="Blog Post",
-        description="Write a blog post",
-        input_data={"query": "Write a blog post about writing"},
-        tags=["writing", "content"]
-    )
-    
-    coding_task = await task_manager.create_task(
-        name="Code Function",
-        description="Write a Python function",
-        input_data={"query": "Write a Python function for factorial"},
-        tags=["coding", "python"]
-    )
-    
-    # Get task router with capability matching strategy
-    router = registry.get_task_router(RoutingStrategy.CAPABILITY_MATCH)
-    
-    # Route tasks
-    math_agent_id = await router.route_task(math_task)
-    writing_agent_id = await router.route_task(writing_task)
-    coding_agent_id = await router.route_task(coding_task)
-    
-    print(f"Math task routed to: {math_agent_id}")
-    print(f"Writing task routed to: {writing_agent_id}")
-    print(f"Coding task routed to: {coding_agent_id}")
-    
-    # Change routing strategy to round robin
-    router.set_strategy(RoutingStrategy.ROUND_ROBIN)
-    
-    # Route tasks again
-    for i in range(3):
-        task = await task_manager.create_task(
-            name=f"Task {i}",
-            description=f"Test task {i}",
-            input_data={"query": f"Test query {i}"}
-        )
-        agent_id = await router.route_task(task)
-        print(f"Task {i} routed to: {agent_id} (round robin)")
-
-# Run the example
-asyncio.run(task_routing_example())
-```
-
-### Batch Execution
-
-```python
-import asyncio
-from symphony.core.registry import ServiceRegistry
-
-async def batch_execution_example():
-    # Set up registry
-    registry = ServiceRegistry.get_instance()
-    
-    # Get components
-    task_manager = registry.get_task_manager()
-    agent_factory = registry.get_agent_factory()
-    executor = registry.get_enhanced_executor()
-    
-    # Create multiple tasks
-    tasks = []
-    for i in range(5):
-        task = await task_manager.create_task(
-            name=f"Batch Task {i}",
-            description=f"Task {i} for batch execution",
-            input_data={"query": f"Process batch item {i}"}
-        )
-        tasks.append(task.id)
-    
-    # Get an agent
-    agent_config_repo = registry.get_repository("agent_config")
-    configs = await agent_config_repo.find_all()
-    agent = await agent_factory.create_agent_from_id(configs[0].id)
-    
-    # Create task-agent pairs
-    task_agent_pairs = [(task_id, agent) for task_id in tasks]
-    
-    # Execute in batch with limited concurrency
-    results = await executor.batch_execute(
-        task_agent_pairs, 
-        max_concurrent=2
-    )
-    
-    # Check results
-    for i, result in enumerate(results):
-        print(f"Task {i} status: {result.status}")
-        if result.status == "completed":
-            print(f"  Output: {result.output_data.get('result', '')[:50]}...")
-
-# Run the example
-asyncio.run(batch_execution_example())
-```
-
-## 3. Orchestration Layer
-
-The Orchestration Layer builds on the Execution Layer to provide complex workflow orchestration capabilities.
-
-### Key Components
-
-- `WorkflowDefinition`: Declarative workflow definition
-- `WorkflowStep`: Building blocks for workflows (task, conditional, parallel, loop)
-- `WorkflowEngine`: Engine for executing workflow definitions
-- `WorkflowTemplates`: Factory for common workflow patterns
-
-### Creating and Executing a Custom Workflow
-
-```python
-import asyncio
-from symphony.core.registry import ServiceRegistry
-from symphony.persistence.memory_repository import InMemoryRepository
-from symphony.orchestration.workflow_definition import WorkflowDefinition
-from symphony.orchestration.steps import TaskStep, ConditionalStep
-from symphony.orchestration import register_orchestration_components
-
-async def custom_workflow_example():
-    # Set up registry
-    registry = ServiceRegistry.get_instance()
-    
-    # Register orchestration components
-    register_orchestration_components(registry)
-    
-    # Create a custom workflow definition
-    workflow_def = WorkflowDefinition(
-        name="Math Problem Solver",
-        description="Workflow that solves math problems with different approaches"
-    )
-    
-    # Initial classification step
-    classify_step = TaskStep(
-        name="Classify Problem",
-        description="Classify the math problem as simple or complex",
-        task_template={
-            "name": "Problem Classification",
-            "description": "Determine if the problem is simple or complex",
-            "input_data": {
-                "query": "Classify the following math problem as SIMPLE or COMPLEX. Only respond with the single word 'SIMPLE' or 'COMPLEX'.\n\nProblem: Find the derivative of f(x) = x^3 + 2x^2 - 5x + 7"
-            }
-        }
-    )
-    
-    # Simple solution step
-    simple_step = TaskStep(
-        name="Simple Solution",
-        description="Solve a simple math problem",
-        task_template={
-            "name": "Simple Math Solution",
-            "description": "Provide a straightforward solution",
-            "input_data": {
-                "query": "Solve this simple math problem step by step:\n\nFind the derivative of f(x) = x^3 + 2x^2 - 5x + 7"
-            }
-        }
-    )
-    
-    # Complex solution step
-    complex_step = TaskStep(
-        name="Complex Solution",
-        description="Solve a complex math problem with detailed explanation",
-        task_template={
-            "name": "Complex Math Solution",
-            "description": "Provide a detailed solution with explanation",
-            "input_data": {
-                "query": "Solve this complex math problem with detailed explanation and show all steps:\n\nFind the derivative of f(x) = x^3 + 2x^2 - 5x + 7"
-            }
-        }
-    )
-    
-    # Conditional step to choose simple or complex path
-    conditional_step = ConditionalStep(
-        name="Solution Path",
-        description="Choose solution approach based on problem classification",
-        condition=f"step.{classify_step.id}.result.strip().upper() == 'COMPLEX'",
-        if_branch=complex_step,
-        else_branch=simple_step
-    )
-    
-    # Add steps to workflow
-    workflow_def = workflow_def.add_step(classify_step)
-    workflow_def = workflow_def.add_step(conditional_step)
-    
-    # Save workflow definition
-    workflow_def_repo = registry.get_repository("workflow_definition")
-    await workflow_def_repo.save(workflow_def)
-    
-    # Execute workflow
-    workflow_engine = registry.get_service("workflow_engine")
-    workflow = await workflow_engine.execute_workflow(workflow_def)
-    
-    # Display results
-    print(f"Workflow status: {workflow.status}")
-    if "context" in workflow.metadata:
-        context = workflow.metadata["context"]
-        
-        classification = context.get(f"step.{classify_step.id}.result", "").strip()
-        print(f"\nProblem Classification: {classification}")
-        
-        if classification.upper() == "COMPLEX":
-            solution = context.get(f"step.{complex_step.id}.result", "Not found")
-            print("\nComplex Solution:")
-        else:
-            solution = context.get(f"step.{simple_step.id}.result", "Not found")
-            print("\nSimple Solution:")
-            
-        print("-" * 40)
-        print(solution)
-
-# Run the example
-asyncio.run(custom_workflow_example())
-```
-
-### Using Workflow Templates
-
-```python
-import asyncio
-from symphony.core.registry import ServiceRegistry
-from symphony.orchestration import register_orchestration_components
-
-async def templates_example():
-    # Set up registry
-    registry = ServiceRegistry.get_instance()
-    
-    # Register orchestration components
-    register_orchestration_components(registry)
-    
-    # Get workflow templates
-    templates = registry.get_service("workflow_templates")
-    
-    # 1. Create a critic-revise workflow
-    critic_workflow = templates.critic_revise(
-        name="Blog Post Creation",
+    # Create and execute a workflow using the facade
+    print("\nCreating and executing critic-revise workflow...")
+    workflow_def = await symphony.workflows.create_critic_revise_workflow(
+        name="Blog Post Improvement",
         main_prompt="Write a short blog post about the benefits of AI assistants in daily life.",
         critique_prompt="Review the blog post critically. Identify areas for improvement in terms of clarity, engagement, and factual accuracy.",
         revision_prompt="Revise the blog post based on the critique to create an improved version."
     )
     
-    # Save and execute the workflow
-    workflow_def_repo = registry.get_repository("workflow_definition")
-    await workflow_def_repo.save(critic_workflow)
+    workflow_id = await symphony.workflows.save_workflow(workflow_def)
+    workflow = await symphony.workflows.execute_workflow(workflow_def)
     
-    workflow_engine = registry.get_service("workflow_engine")
-    critic_result = await workflow_engine.execute_workflow(critic_workflow)
+    # Get and display workflow results
+    results = await symphony.workflows.get_workflow_results(workflow.id)
+    print("\nWorkflow status:", results["status"])
     
-    print("=== Critic-Revise Workflow Result ===")
-    print(f"Status: {critic_result.status}")
-    if critic_result.status == "completed":
-        context = critic_result.metadata["context"]
-        # Extract and print the final revision
-        revision_key = next((k for k in context.keys() if k.startswith("step.") and k.endswith(".result") and "Revision" in context.get(f"{k.split('.')[0]}.{k.split('.')[1]}.name", "")), None)
-        if revision_key:
-            print("\nFinal Revised Version:")
+    if "steps" in results:
+        for step_name, result in results["steps"].items():
+            print(f"\n{step_name}:")
             print("-" * 40)
-            print(context[revision_key][:500] + "...")
-    
-    # 2. Create a parallel experts workflow
-    experts_workflow = templates.parallel_experts(
-        name="Smart Home Analysis",
-        prompt="What are the key considerations when setting up a smart home system?",
-        expert_roles=["Technology", "Security", "Home Design"],
-        summary_prompt="Synthesize the expert opinions into a comprehensive guide for setting up a smart home system."
-    )
-    
-    # Save and execute the workflow
-    await workflow_def_repo.save(experts_workflow)
-    experts_result = await workflow_engine.execute_workflow(experts_workflow)
-    
-    print("\n=== Parallel Experts Workflow Result ===")
-    print(f"Status: {experts_result.status}")
-    if experts_result.status == "completed":
-        context = experts_result.metadata["context"]
-        # Extract and print the final synthesis
-        synthesis_key = next((k for k in context.keys() if k.startswith("step.") and k.endswith(".result") and "Synthesis" in context.get(f"{k.split('.')[0]}.{k.split('.')[1]}.name", "")), None)
-        if synthesis_key:
-            print("\nSynthesized Expert Opinions:")
-            print("-" * 40)
-            print(context[synthesis_key][:500] + "...")
+            print(result)
 
-# Run the example
-asyncio.run(templates_example())
+asyncio.run(facade_api_example())
 ```
 
-### Creating an Iterative Refinement Workflow
+### Using the Builder Pattern
+
+The Builder Pattern provides a fluent interface for creating complex objects:
 
 ```python
 import asyncio
-from symphony.core.registry import ServiceRegistry
-from symphony.orchestration import register_orchestration_components
+from symphony import Symphony, TaskPriority
 
-async def iterative_refinement_example():
-    # Set up registry
-    registry = ServiceRegistry.get_instance()
+async def builder_pattern_example():
+    """Demonstrate the Symphony API using the builder pattern."""
+    # Initialize Symphony
+    symphony = Symphony()
+    await symphony.setup(persistence_type="memory")
     
-    # Register orchestration components
-    register_orchestration_components(registry)
+    # Create an agent using the builder pattern
+    print("Creating agent with builder pattern...")
+    agent = (symphony.build_agent()
+             .create("AnalystAgent", "Data Analyst", 
+                   "You are a data analyst who excels at interpreting and analyzing data.")
+             .with_capabilities(["analysis", "data", "statistics"])
+             .with_model("gpt-4")
+             .with_metadata("description", "Specialized in data analysis and visualization")
+             .build())
     
-    # Get workflow templates
-    templates = registry.get_service("workflow_templates")
+    # Save the agent
+    agent_id = await symphony.agents.save_agent(agent)
+    print(f"Created agent with ID: {agent_id}")
     
-    # Create an iterative refinement workflow
-    refinement_workflow = templates.iterative_refinement(
-        name="Business Proposal Refinement",
-        initial_prompt="Draft a short business proposal for a new AI-powered productivity app.",
-        feedback_prompt="Review the current draft and suggest specific improvements to make it more compelling and clear.",
-        max_iterations=3,
-        convergence_condition="'perfect' in step.result.lower() or 'excellent' in step.result.lower()"
-    )
+    # Create a task using the builder pattern
+    print("\nCreating task with builder pattern...")
+    task = (symphony.build_task()
+           .create("Analyze Data", "Analyze the given dataset")
+           .with_query("""Analyze this quarterly sales data and provide 3 key insights:
+           
+Region,Q1,Q2,Q3,Q4
+North,120000,145000,160000,190000
+South,95000,110000,102000,130000
+East,150000,175000,190000,205000
+West,135000,140000,155000,180000""")
+           .for_agent(agent_id)
+           .with_priority(TaskPriority.HIGH)
+           .with_metadata("data_type", "quarterly_sales")
+           .build())
     
-    # Save and execute the workflow
-    workflow_def_repo = registry.get_repository("workflow_definition")
-    await workflow_def_repo.save(refinement_workflow)
+    # Execute the task directly from the builder
+    print("Executing task...")
+    executed_task = await (symphony.build_task()
+                          .create("Analyze Data", "Analyze the data")
+                          .with_query("Analyze the quarterly sales data for key trends")
+                          .for_agent(agent_id)
+                          .build()
+                          .execute())
     
-    workflow_engine = registry.get_service("workflow_engine")
-    result = await workflow_engine.execute_workflow(refinement_workflow)
+    # Check task result
+    print(f"Task status: {executed_task.status}")
+    if executed_task.status.value == "completed":
+        print("\nTask Result:")
+        print("-" * 40)
+        print(executed_task.result)
     
-    print("=== Iterative Refinement Workflow Result ===")
-    print(f"Status: {result.status}")
-    if result.status == "completed":
-        context = result.metadata["context"]
-        
-        # Extract information about the iterations
-        iterations = next((context[k]["iterations"] for k in context.keys() if k.startswith("step.") and "iterations" in context[k]), None)
-        if iterations:
-            print(f"\nCompleted {len(iterations)} refinement iterations")
-            
-            # Show initial draft
-            initial_key = next((k for k in context.keys() if k.startswith("step.") and k.endswith(".result") and "Initial" in context.get(f"{k.split('.')[0]}.{k.split('.')[1]}.name", "")), None)
-            if initial_key:
-                print("\nInitial Draft:")
-                print("-" * 40)
-                print(context[initial_key][:300] + "...")
-            
-            # Show final refinement
-            final_iteration = max(iterations.keys(), key=int)
-            print(f"\nFinal Refinement (Iteration {final_iteration}):")
+    # Create a workflow using the builder pattern
+    print("\nCreating workflow with builder pattern...")
+    workflow = (symphony.build_workflow()
+               .create("Multi-step Analysis", "Perform analysis and visualization")
+               .add_task(
+                   "Data Analysis", 
+                   "Analyze the dataset", 
+                   {
+                       "name": "Data Analysis",
+                       "description": "Analyze the quarterly sales data",
+                       "input_data": {
+                           "query": """Analyze this quarterly sales data and provide insights:
+                           
+Region,Q1,Q2,Q3,Q4
+North,120000,145000,160000,190000
+South,95000,110000,102000,130000
+East,150000,175000,190000,205000
+West,135000,140000,155000,180000"""
+                       }
+                   },
+                   agent_id
+               )
+               .add_task(
+                   "Visualization Suggestions", 
+                   "Suggest visualizations", 
+                   {
+                       "name": "Visualization Ideas",
+                       "description": "Suggest visualizations for the data",
+                       "input_data": {
+                           "query": """Based on the data analysis, suggest 3 different visualization types that would best represent the insights. For each one, explain why it's appropriate and what it would reveal."""
+                       }
+                   },
+                   agent_id
+               )
+               .with_context({"data_source": "quarterly_sales_report"})
+               .build())
+    
+    # Execute the workflow directly from the builder
+    print("Executing workflow...")
+    executed_workflow = await (symphony.build_workflow()
+                              .create("Multi-step Analysis", "Analysis with visualization")
+                              .add_task("Data Analysis", "Analyze data", {
+                                  "name": "Analysis",
+                                  "description": "Analyze sales data",
+                                  "input_data": {"query": "Analyze the quarterly sales trends"}
+                              }, agent_id)
+                              .build()
+                              .execute())
+    
+    # Get workflow results
+    results = await symphony.workflows.get_workflow_results(executed_workflow.id)
+    print("\nWorkflow status:", results["status"])
+    
+    if "steps" in results:
+        for step_name, result in results["steps"].items():
+            print(f"\n{step_name}:")
             print("-" * 40)
-            print(iterations[final_iteration]["result"][:300] + "...")
+            print(result)
 
-# Run the example
-asyncio.run(iterative_refinement_example())
+asyncio.run(builder_pattern_example())
 ```
 
-## 4. Complete Application Example
+### Creating a Complete Application Using the API
 
 Let's put it all together in a complete application example:
+
+```python
+import asyncio
+import os
+from symphony import Symphony, TaskPriority
+from symphony.execution.workflow_tracker import WorkflowStatus
+
+async def complete_api_example():
+    """Complete example using the Symphony API."""
+    print("\n=== Symphony API Complete Example ===\n")
+    
+    # Set up directory for storage
+    os.makedirs("./data", exist_ok=True)
+    
+    # Initialize Symphony with file storage
+    symphony = Symphony()
+    await symphony.setup(persistence_type="file", base_dir="./data")
+    
+    # Create writer agent
+    writer_agent = (symphony.build_agent()
+                   .create("WriterAgent", "Content Writer",
+                         "You are a creative content writer who excels at generating engaging content.")
+                   .with_capabilities(["writing", "content", "creativity"])
+                   .build())
+    
+    # Create editor agent
+    editor_agent = (symphony.build_agent()
+                   .create("EditorAgent", "Content Editor",
+                         "You are a meticulous editor who excels at improving content clarity, flow, and correctness.")
+                   .with_capabilities(["editing", "review", "clarity"])
+                   .build())
+    
+    # Save agents
+    writer_id = await symphony.agents.save_agent(writer_agent)
+    editor_id = await symphony.agents.save_agent(editor_agent)
+    print(f"Created agents: WriterAgent and EditorAgent")
+    
+    # Create a multi-stage content creation workflow
+    workflow = (symphony.build_workflow()
+               .create("Content Creation Pipeline", "Multi-stage pipeline for creating and refining content")
+               
+               # 1. Research step
+               .add_task(
+                   "Research",
+                   "Research the topic",
+                   {
+                       "name": "Research",
+                       "description": "Research the given topic and gather key points",
+                       "input_data": {
+                           "query": "Research the topic of 'artificial intelligence in healthcare' and provide 5 key points that should be covered in an article."
+                       }
+                   },
+                   writer_id
+               )
+               
+               # 2. First draft step
+               .add_task(
+                   "First Draft",
+                   "Write the first draft based on research",
+                   {
+                       "name": "First Draft",
+                       "description": "Write first draft based on research",
+                       "input_data": {
+                           "query": "Write a well-structured 500-word article about 'artificial intelligence in healthcare' covering the key points identified in the research phase."
+                       }
+                   },
+                   writer_id
+               )
+               
+               # 3. Review step
+               .add_task(
+                   "Editorial Review",
+                   "Review the draft for clarity and accuracy",
+                   {
+                       "name": "Editorial Review",
+                       "description": "Review for clarity, accuracy, and style",
+                       "input_data": {
+                           "query": "Review this article for clarity, factual accuracy, and style. Provide specific suggestions for improvement."
+                       }
+                   },
+                   editor_id
+               )
+               
+               # 4. Final revision step
+               .add_task(
+                   "Final Revision",
+                   "Revise the draft based on review",
+                   {
+                       "name": "Final Revision",
+                       "description": "Revise based on editorial review",
+                       "input_data": {
+                           "query": "Revise this article based on the editorial review. Create a polished final version."
+                       }
+                   },
+                   writer_id
+               )
+               .build())
+    
+    # Save and execute workflow
+    await symphony.workflows.save_workflow(workflow)
+    print("Created and saved content creation workflow")
+    
+    print("Executing workflow...")
+    executed_workflow = await symphony.workflows.execute_workflow(workflow)
+    
+    # Display results
+    print(f"\nWorkflow completed with status: {executed_workflow.status}")
+    
+    if executed_workflow.status == WorkflowStatus.COMPLETED:
+        # Get results using the facade
+        results = await symphony.workflows.get_workflow_results(executed_workflow.id)
+        
+        # Find the final revision step
+        final_result = next((result for step, result in results["steps"].items() 
+                         if "Final Revision" in step), "Not found")
+        
+        print("\n=== Final Article ===")
+        print("-" * 60)
+        print(final_result)
+        print("-" * 60)
+        
+        # Save output to a file
+        with open("./data/final_article.md", "w") as f:
+            f.write(final_result)
+        print(f"\nOutput saved to ./data/final_article.md")
+
+asyncio.run(complete_api_example())
+```
+
+## 5. Complete Application Example
+
+Let's put it all together in a complete application example using the legacy approach:
 
 ```python
 import asyncio
@@ -929,120 +628,125 @@ class SummarizationStep(WorkflowStep):
         )
 ```
 
-### Creating Custom Workflow Templates
+### Extension Points in the API Layer
 
-You can also create custom workflow templates for specific use cases:
+The API layer is designed to be extended as well:
 
 ```python
-from symphony.orchestration.workflow_definition import WorkflowDefinition
-from symphony.orchestration.steps import TaskStep, ConditionalStep, ParallelStep, LoopStep
+from symphony.api import Symphony
 
-def create_research_synthesis_workflow(
-    topic: str,
-    perspectives: List[str],
-    agent_id: Optional[str] = None
-) -> WorkflowDefinition:
-    """Create a workflow for researching a topic from multiple perspectives and synthesizing findings.
+# Extend the Symphony class with custom functionality
+class EnhancedSymphony(Symphony):
+    """Extended Symphony API with additional functionality."""
     
-    Args:
-        topic: The research topic
-        perspectives: List of perspectives to research from
-        agent_id: Optional agent ID to use
+    async def setup_development_environment(self):
+        """Set up a development environment with predefined agents and templates."""
+        await self.setup(persistence_type="memory")
         
-    Returns:
-        Research synthesis workflow definition
-    """
-    workflow = WorkflowDefinition(
-        name=f"Research Synthesis: {topic}",
-        description=f"Research {topic} from multiple perspectives and synthesize findings"
-    )
-    
-    # Initial step to generate research questions
-    questions_step = TaskStep(
-        name="Generate Questions",
-        description=f"Generate research questions about {topic}",
-        task_template={
-            "name": "Generate Research Questions",
-            "description": f"Generate research questions about {topic}",
-            "input_data": {
-                "query": f"Generate 3 specific research questions about {topic} that would be valuable to explore. Format as a numbered list."
-            }
-        },
-        agent_id=agent_id
-    )
-    
-    workflow = workflow.add_step(questions_step)
-    
-    # Create research steps for each perspective
-    research_steps = []
-    
-    for perspective in perspectives:
-        research_step = TaskStep(
-            name=f"Research: {perspective}",
-            description=f"Research {topic} from {perspective} perspective",
-            task_template={
-                "name": f"Research: {perspective}",
-                "description": f"Research from {perspective} perspective",
-                "input_data": {
-                    "query": f"Research {topic} from the perspective of {perspective}, addressing these questions:\n\n{{{{step.{questions_step.id}.result}}}}"
-                }
-            },
-            agent_id=agent_id
+        # Create standard agents
+        writer = await self.agents.create_agent(
+            name="Writer",
+            role="Content Writer",
+            instruction_template="You write concise, helpful content.",
+            capabilities={"expertise": ["writing", "communication"]}
         )
-        research_steps.append(research_step)
-    
-    # Execute research in parallel
-    parallel_research = ParallelStep(
-        name="Parallel Research",
-        description="Conduct research from multiple perspectives in parallel",
-        steps=research_steps
-    )
-    
-    workflow = workflow.add_step(parallel_research)
-    
-    # Build the synthesis template
-    synthesis_template = {
-        "name": "Research Synthesis",
-        "description": "Synthesize research findings",
-        "input_data": {
-            "query": f"Synthesize the following research on {topic} into a comprehensive analysis that compares and contrasts findings from different perspectives. Aim for a balanced view that integrates these diverse perspectives:\n\n"
+        
+        analyst = await self.agents.create_agent(
+            name="Analyst",
+            role="Data Analyst",
+            instruction_template="You analyze data and provide insights.",
+            capabilities={"expertise": ["analysis", "data", "math"]}
+        )
+        
+        reviewer = await self.agents.create_agent(
+            name="Reviewer",
+            role="Content Reviewer",
+            instruction_template="You review content for quality and accuracy.",
+            capabilities={"expertise": ["review", "editing", "fact-checking"]}
+        )
+        
+        # Save the agents
+        writer_id = await self.agents.save_agent(writer)
+        analyst_id = await self.agents.save_agent(analyst)
+        reviewer_id = await self.agents.save_agent(reviewer)
+        
+        return {
+            "writer_id": writer_id,
+            "analyst_id": analyst_id,
+            "reviewer_id": reviewer_id
         }
-    }
     
-    # Add each perspective's findings to the template
-    for i, perspective in enumerate(perspectives):
-        synthesis_template["input_data"]["query"] += (
-            f"\n## {perspective} Perspective:\n"
-            f"{{{{step.{parallel_research.id}.results.{i}.result}}}}\n"
-        )
-    
-    # Final synthesis step
-    synthesis_step = TaskStep(
-        name="Research Synthesis",
-        description=f"Synthesize research findings on {topic}",
-        task_template=synthesis_template,
-        agent_id=agent_id
-    )
-    
-    workflow = workflow.add_step(synthesis_step)
-    
-    return workflow
+    async def generate_report(self, topic, data_source, agent_ids=None):
+        """Generate a comprehensive report on a topic using a predefined workflow."""
+        # Create a multi-stage workflow for report generation
+        workflow = (self.build_workflow()
+                   .create(f"Report: {topic}", f"Generate a report on {topic}")
+                   .add_task("Data Analysis", "Analyze the data", {
+                       "name": "Data Analysis",
+                       "description": f"Analyze data from {data_source}",
+                       "input_data": {
+                           "query": f"Analyze the following data from {data_source} related to {topic}. What are the key insights?"
+                       }
+                   }, agent_ids.get("analyst_id") if agent_ids else None)
+                   .add_task("Report Draft", "Write report draft", {
+                       "name": "Report Draft",
+                       "description": "Write initial report draft",
+                       "input_data": {
+                           "query": f"Write a comprehensive report on {topic} based on this analysis. Include introduction, methods, results, and conclusion sections."
+                       }
+                   }, agent_ids.get("writer_id") if agent_ids else None)
+                   .add_task("Review", "Review the report", {
+                       "name": "Report Review",
+                       "description": "Review the report for quality",
+                       "input_data": {
+                           "query": "Review this report for accuracy, clarity, and completeness. Suggest specific improvements."
+                       }
+                   }, agent_ids.get("reviewer_id") if agent_ids else None)
+                   .add_task("Final Report", "Create final report", {
+                       "name": "Final Report",
+                       "description": "Create the final report",
+                       "input_data": {
+                           "query": "Revise the report based on the review. This should be the final, polished version."
+                       }
+                   }, agent_ids.get("writer_id") if agent_ids else None)
+                   .build())
+        
+        # Execute the workflow
+        executed_workflow = await self.workflows.execute_workflow(workflow)
+        
+        # Get results
+        results = await self.workflows.get_workflow_results(executed_workflow.id)
+        
+        # Find the final report result
+        final_report = next((result for step, result in results["steps"].items() 
+                           if "Final Report" in step), "No report generated")
+        
+        return final_report
 ```
 
 ## Conclusion
 
-This guide demonstrates the powerful capabilities of the enhanced Symphony framework with its three layers:
+This guide demonstrates the powerful capabilities of the Symphony framework with its four layers:
 
 1. **Persistence Layer**: For storing and retrieving entities
 2. **Execution Layer**: For executing tasks with advanced capabilities
 3. **Orchestration Layer**: For defining and running complex workflows
+4. **API Layer**: For providing clean, user-friendly interfaces
 
-By combining these layers, you can create sophisticated agent-based applications with complex orchestration patterns, while maintaining a clean, extensible architecture.
+The API Layer improves developer experience by:
+
+1. **Hiding implementation details**: The Registry pattern is powerful but exposes too many details
+2. **Providing domain-specific interfaces**: Facades for common operations in workflows, agents, and tasks
+3. **Enabling fluent interfaces**: Builders for creating complex objects with method chaining
+4. **Simplifying setup**: Convenient initialization and configuration
+
+When developing with Symphony, we recommend using the API Layer for most use cases. The underlying layers are still accessible for advanced use cases or when you need more control over the implementation details.
 
 The framework is designed to be modular and extensible, allowing you to:
 
 - Add custom storage implementations to the Persistence Layer
 - Extend the Execution Layer with new execution strategies
 - Create custom step types and workflow templates in the Orchestration Layer
+- Extend the API Layer with custom facades and builders
 
 This modular design ensures that Symphony can grow and adapt to your specific needs while maintaining a consistent architecture and API.

@@ -1,0 +1,1 @@
+"""Symphony builder package.\n\nThis package provides fluent builder interfaces for creating Symphony\ncomponents, making it easier to create complex objects with a clean,\nreadable syntax.\n"""

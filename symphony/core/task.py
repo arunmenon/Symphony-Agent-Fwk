@@ -19,6 +19,13 @@ class TaskStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
 
+class TaskPriority(str, Enum):
+    """Task priority levels."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
 class Task(BaseModel):
     """Task definition with persistence support.
     
@@ -48,7 +55,12 @@ class Task(BaseModel):
     
     # Metadata
     tags: List[str] = Field(default_factory=list)
-    assigned_agent_id: Optional[str] = None
+    agent_id: Optional[str] = None
+    priority: TaskPriority = TaskPriority.MEDIUM
+    deadline: Optional[datetime] = None
+    parent_task_id: Optional[str] = None
+    workflow_id: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
     
     def get_input(self, key: str, default: Any = None) -> Any:
         """Get input by key with optional default."""

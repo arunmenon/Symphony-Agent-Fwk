@@ -1,0 +1,1 @@
+"""Symphony facade package.\n\nThis package contains domain-specific facades for Symphony components,\nproviding clean interfaces that abstract away implementation details.\n"""

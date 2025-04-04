@@ -118,23 +118,42 @@ Symphony implements these software design patterns:
 - **Observer Pattern**: Via the event system for loose coupling
 - **Dependency Injection**: Through the container system
 - **Plugin Architecture**: For system extensibility
+- **Registry Pattern**: For centralized service management and discovery
+- **Facade Pattern**: For providing domain-specific interfaces that hide implementation details
+- **Builder Pattern**: For fluent interfaces that make creating complex objects more intuitive
+
+For more details on the API design patterns, see [API Design](./api_design.md).
 
 ## File Structure
 
 ```
 symphony/
 ├── agents/             # Agent implementations
+├── api.py              # Main Symphony API entry point
+├── builder/            # Builder pattern implementations
+│   ├── agent_builder.py    # Fluent interface for agent creation
+│   ├── task_builder.py     # Fluent interface for task creation
+│   └── workflow_builder.py # Fluent interface for workflow creation
 ├── core/               # Core framework components
 │   ├── config.py       # Configuration management
 │   ├── container.py    # Dependency injection container
 │   ├── events.py       # Event system
 │   ├── exceptions.py   # Exception hierarchy
 │   ├── factory.py      # Component factories
-│   └── plugin.py       # Plugin system
+│   ├── plugin.py       # Plugin system
+│   └── registry.py     # Service registry for component management
+├── facade/             # Facade pattern implementations
+│   ├── agents.py       # Domain-specific interface for agents
+│   ├── tasks.py        # Domain-specific interface for tasks
+│   └── workflows.py    # Domain-specific interface for workflows
 ├── llm/                # LLM client implementations
 ├── mcp/                # Model Context Protocol integration
 ├── memory/             # Memory implementations
 ├── orchestration/      # Orchestration engines
+├── persistence/        # Persistence layer implementations
+│   ├── file_repository.py   # File-based repository
+│   ├── memory_repository.py # In-memory repository
+│   └── repository.py        # Abstract repository interface
 ├── prompts/            # Prompt management
 ├── tools/              # Tool abstractions
 └── utils/              # Utilities and types
