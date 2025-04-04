@@ -7,6 +7,7 @@ providing a clean interface for pattern execution and management.
 from typing import Dict, Any, List, Optional
 from symphony.core.registry import ServiceRegistry
 from symphony.patterns.registry import PatternRegistry
+from symphony.patterns.base import Pattern, PatternContext, SequentialPattern, ParallelPattern, ConditionalPattern
 
 
 class PatternsFacade:
@@ -44,6 +45,84 @@ class PatternsFacade:
             
         pattern = pattern_registry.create_pattern(pattern_name, config)
         return await pattern.run(inputs, self.registry)
+    
+    def create_pattern(self, pattern_name: str, config: Dict[str, Any] = None) -> Pattern:
+        """Create a pattern instance with the given configuration.
+        
+        Args:
+            pattern_name: Pattern name
+            config: Pattern configuration (optional)
+            
+        Returns:
+            Pattern instance
+            
+        Raises:
+            ValueError: If pattern registry or pattern is not found
+        """
+        pattern_registry = self.registry.get_service("pattern_registry")
+        if not pattern_registry:
+            raise ValueError("Pattern registry not found. Call register_patterns() first.")
+            
+        return pattern_registry.create_pattern(pattern_name, config)
+    
+    def compose_sequential(self, patterns: List[Pattern], name: str = "sequential", config: Dict[str, Any] = None) -> SequentialPattern:
+        """Compose multiple patterns into a sequential pattern.
+        
+        Args:
+            patterns: List of patterns to execute in sequence
+            name: Name for the composed pattern (optional)
+            config: Additional configuration (optional)
+            
+        Returns:
+            Sequential pattern instance
+        """
+        pattern_config = {
+            "name": name,
+            "description": "Sequential composition of patterns",
+            **(config or {})
+        }
+        
+        return SequentialPattern(pattern_config, patterns)
+    
+    def compose_parallel(self, patterns: List[Pattern], name: str = "parallel", config: Dict[str, Any] = None) -> ParallelPattern:
+        """Compose multiple patterns into a parallel pattern.
+        
+        Args:
+            patterns: List of patterns to execute in parallel
+            name: Name for the composed pattern (optional)
+            config: Additional configuration (optional)
+            
+        Returns:
+            Parallel pattern instance
+        """
+        pattern_config = {
+            "name": name,
+            "description": "Parallel composition of patterns",
+            **(config or {})
+        }
+        
+        return ParallelPattern(pattern_config, patterns)
+    
+    def compose_conditional(self, condition: callable, if_pattern: Pattern, else_pattern: Optional[Pattern] = None, name: str = "conditional", config: Dict[str, Any] = None) -> ConditionalPattern:
+        """Compose a conditional pattern.
+        
+        Args:
+            condition: Function that evaluates the condition
+            if_pattern: Pattern to execute if condition is True
+            else_pattern: Pattern to execute if condition is False (optional)
+            name: Name for the composed pattern (optional)
+            config: Additional configuration (optional)
+            
+        Returns:
+            Conditional pattern instance
+        """
+        pattern_config = {
+            "name": name,
+            "description": "Conditional pattern composition",
+            **(config or {})
+        }
+        
+        return ConditionalPattern(pattern_config, condition, if_pattern, else_pattern)
     
     async def get_available_patterns(self, category: str = None) -> List[Dict[str, Any]]:
         """Get information about available patterns.
