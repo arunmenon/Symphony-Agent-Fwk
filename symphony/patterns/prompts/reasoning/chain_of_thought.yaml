@@ -1,0 +1,31 @@
+default:
+  content: |
+    Please solve this problem step-by-step, showing your reasoning:
+
+    {query}
+
+    Let's work through this carefully:
+
+    Step 1:
+  description: "Standard Chain of Thought prompt that encourages step-by-step reasoning"
+
+concise:
+  content: |
+    Solve this step-by-step:
+    {query}
+    
+    Steps:
+    1.
+  description: "More concise Chain of Thought prompt for shorter reasoning chains"
+
+detailed:
+  content: |
+    I'd like you to solve the following problem by breaking it down into clear steps.
+    For each step, explain your reasoning and show any calculations or considerations.
+    
+    Problem: {query}
+    
+    Please start by understanding what we're looking for, then work through the problem methodically.
+    
+    Step 1:
+  description: "Detailed Chain of Thought prompt that emphasizes thorough explanations"

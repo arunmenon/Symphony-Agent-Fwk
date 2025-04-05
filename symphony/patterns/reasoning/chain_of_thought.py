@@ -10,6 +10,7 @@ import re
 
 from symphony.patterns.base import Pattern, PatternContext, PatternConfig
 from symphony.core.task import Task
+from symphony.patterns.prompts import get_registry
 
 
 class ChainOfThoughtPattern(Pattern):
@@ -44,8 +45,20 @@ class ChainOfThoughtPattern(Pattern):
         # Get task manager
         task_manager = context.get_service("task_manager")
         
-        # Format the initial prompt to encourage step-by-step reasoning
-        cot_prompt = f"""Please solve this problem step-by-step, showing your reasoning:
+        # Get prompt template
+        prompt_registry = get_registry()
+        prompt_style = self.config.metadata.get("prompt_style", "default")
+        
+        # Render the prompt template with query
+        try:
+            cot_prompt = prompt_registry.render_template(
+                "reasoning.chain_of_thought",
+                {"query": query},
+                version=prompt_style
+            )
+        except ValueError:
+            # Fallback to default prompt if template not found
+            cot_prompt = f"""Please solve this problem step-by-step, showing your reasoning:
 
 {query}
 
@@ -84,8 +97,9 @@ Step 1:"""
         
         # Add metadata
         context.metadata["num_steps"] = len(steps)
+        context.metadata["prompt_style"] = prompt_style
     
-    def _extract_steps(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_steps(self, text: str) -> List[str]:
         """Extract reasoning steps from text.
         
         Args:
@@ -99,16 +113,13 @@ Step 1:"""
         matches = step_pattern.findall(text)
         
         steps = []
-        for num, content in matches:
-            steps.append({
-                "number": int(num),
-                "content": content.strip()
-            })
+        for _, content in matches:
+            steps.append(content.strip())
         
-        # If no steps found, try to split by newlines and create steps
+        # If no steps found, try to split by newlines and look for numbered steps
         if not steps:
             lines = text.split("\n")
-            current_step = {"number": 1, "content": ""}
+            current_step = ""
             
             for line in lines:
                 line = line.strip()
@@ -116,22 +127,17 @@ Step 1:"""
                     continue
                     
                 new_step_match = re.match(r"^(\d+)[.:]", line)
-                if new_step_match and current_step["content"]:
+                if new_step_match and current_step:
                     steps.append(current_step)
-                    step_num = int(new_step_match.group(1))
-                    content = line[len(new_step_match.group(0)):].strip()
-                    current_step = {"number": step_num, "content": content}
+                    current_step = line[len(new_step_match.group(0)):].strip()
                 else:
-                    current_step["content"] += " " + line
+                    current_step += " " + line if current_step else line
                     
-            if current_step["content"]:
+            if current_step:
                 steps.append(current_step)
                 
         # If still no steps, just use the whole text as one step
         if not steps:
-            steps.append({
-                "number": 1,
-                "content": text.strip()
-            })
+            steps.append(text.strip())
             
         return steps

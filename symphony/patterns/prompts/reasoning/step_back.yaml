@@ -1,0 +1,83 @@
+default:
+  strategic:
+    content: |
+      Before diving into the details of this problem, let's take a step back and think about:
+      1. The high-level approach we should take
+      2. What domain knowledge is relevant
+      3. How we might structure our solution
+      
+      Problem: {query}
+      
+      First, let's analyze this at a strategic level:
+    description: "Strategic analysis prompt that encourages taking a high-level view"
+    
+  detailed:
+    content: |
+      Based on our strategic analysis:
+      
+      {strategic_analysis}
+      
+      Now, let's solve the problem in detail:
+      
+      {query}
+      
+      Detailed solution:
+    description: "Detailed solution prompt that builds on the strategic analysis"
+
+academic:
+  strategic:
+    content: |
+      Let's approach this problem methodically by first considering the broader context.
+      
+      Question: {query}
+      
+      Before calculating or solving directly, let's consider:
+      • What principles or theories are relevant to this problem?
+      • What are the key variables or constraints we need to account for?
+      • Are there any assumptions we should make explicit?
+      • What methodology would be most appropriate?
+      
+      Strategic analysis:
+    description: "Academic-style strategic analysis prompt for scholarly problems"
+    
+  detailed:
+    content: |
+      Having performed a strategic analysis:
+      
+      {strategic_analysis}
+      
+      We can now address the original question systematically:
+      
+      {query}
+      
+      Step-by-step solution:
+    description: "Academic-style detailed solution prompt"
+
+creative:
+  strategic:
+    content: |
+      Before jumping to answers, let's explore this question from different angles:
+      
+      {query}
+      
+      To think creatively about this:
+      • What different domains or perspectives might be relevant?
+      • Are there any unconventional approaches we could consider?
+      • What would happen if we challenged the standard assumptions?
+      • How might different disciplines approach this?
+      
+      Creative framing:
+    description: "Creative strategic analysis prompt for open-ended problems"
+    
+  detailed:
+    content: |
+      Building on our creative framing:
+      
+      {strategic_analysis}
+      
+      Let's now develop a thoughtful response to:
+      
+      {query}
+      
+      Response:
+    description: "Creative detailed solution prompt"

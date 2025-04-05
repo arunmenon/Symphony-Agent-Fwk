@@ -1,0 +1,74 @@
+default:
+  critic:
+    content: |
+      Review the following content critically. Identify issues, errors, or areas for improvement.
+      {criteria_text}
+      
+      Content to review:
+      {content}
+      
+      Critical review:
+    description: "Standard critic review prompt"
+    
+  revision:
+    content: |
+      Revise the following content based on the critical feedback.
+      
+      Original content:
+      {content}
+      
+      Critical feedback:
+      {criticism}
+      
+      Revised content:
+    description: "Standard revision prompt based on critical feedback"
+
+harsh:
+  critic:
+    content: |
+      Perform a rigorous and thorough critique of the following content. Be demanding and look for any flaws, errors, inconsistencies, or areas that need improvement.
+      {criteria_text}
+      
+      Content to review:
+      {content}
+      
+      Detailed critique (be specific and uncompromising):
+    description: "Harsh critic review prompt that demands high standards"
+    
+  revision:
+    content: |
+      The following content has been critically reviewed and significant issues were identified. Your job is to thoroughly revise it to address ALL of the criticisms and produce a substantially improved version.
+      
+      Original content:
+      {content}
+      
+      Critical feedback to address:
+      {criticism}
+      
+      Completely revised content:
+    description: "Harsh revision prompt emphasizing significant improvement"
+
+constructive:
+  critic:
+    content: |
+      Please provide a constructive review of the following content. Identify both strengths and areas for improvement, with specific recommendations for enhancement.
+      {criteria_text}
+      
+      Content to review:
+      {content}
+      
+      Constructive feedback (start with strengths, then areas for improvement):
+    description: "Constructive critic review prompt that balances positive and negative feedback"
+    
+  revision:
+    content: |
+      The following content has received constructive feedback. Your task is to carefully revise it while preserving its existing strengths and addressing the recommended improvements.
+      
+      Original content:
+      {content}
+      
+      Constructive feedback:
+      {criticism}
+      
+      Thoughtfully revised content:
+    description: "Constructive revision prompt emphasizing improvement while preserving strengths"

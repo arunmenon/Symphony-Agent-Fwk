@@ -9,6 +9,7 @@ import json
 
 from symphony.patterns.base import Pattern, PatternContext, PatternConfig
 from symphony.core.task import Task
+from symphony.patterns.prompts import get_registry
 
 
 class StepBackPattern(Pattern):
@@ -40,8 +41,23 @@ class StepBackPattern(Pattern):
         # Get task manager
         task_manager = context.get_service("task_manager")
         
+        # Get prompt template
+        prompt_registry = get_registry()
+        prompt_style = self.config.metadata.get("prompt_style", "default")
+        
         # Step 1: High-level strategic analysis
-        strategic_prompt = f"""Before diving into the details of this problem, let's take a step back and think about:
+        try:
+            # Get strategic prompt template
+            strategic_prompt = prompt_registry.get_template(
+                "reasoning.step_back",
+                version=prompt_style
+            )["strategic"]["content"]
+            
+            # Replace variables
+            strategic_prompt = strategic_prompt.replace("{query}", query)
+        except (ValueError, KeyError):
+            # Fallback to default prompt if template not found
+            strategic_prompt = f"""Before diving into the details of this problem, let's take a step back and think about:
 1. The high-level approach we should take
 2. What domain knowledge is relevant
 3. How we might structure our solution
@@ -72,7 +88,19 @@ First, let's analyze this at a strategic level:"""
         strategic_analysis = strategic_result.output_data.get("result", "")
         
         # Step 2: Detailed solution based on strategic analysis
-        detailed_prompt = f"""Based on our strategic analysis:
+        try:
+            # Get detailed prompt template
+            detailed_prompt = prompt_registry.get_template(
+                "reasoning.step_back",
+                version=prompt_style
+            )["detailed"]["content"]
+            
+            # Replace variables
+            detailed_prompt = detailed_prompt.replace("{query}", query)
+            detailed_prompt = detailed_prompt.replace("{strategic_analysis}", strategic_analysis)
+        except (ValueError, KeyError):
+            # Fallback to default prompt if template not found
+            detailed_prompt = f"""Based on our strategic analysis:
 
 {strategic_analysis}
 
@@ -112,3 +140,4 @@ Detailed solution:"""
         context.metadata["had_strategic_analysis"] = True
         context.metadata["strategic_task_id"] = strategic_task_id
         context.metadata["detailed_task_id"] = detailed_task_id
+        context.metadata["prompt_style"] = prompt_style

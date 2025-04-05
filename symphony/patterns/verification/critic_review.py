@@ -9,6 +9,7 @@ import json
 
 from symphony.patterns.base import Pattern, PatternContext, PatternConfig
 from symphony.core.task import Task
+from symphony.patterns.prompts import get_registry
 
 
 class CriticReviewPattern(Pattern):
@@ -50,6 +51,10 @@ class CriticReviewPattern(Pattern):
         task_manager = context.get_service("task_manager")
         executor = context.get_service("enhanced_executor")
         
+        # Get prompt template registry
+        prompt_registry = get_registry()
+        prompt_style = self.config.metadata.get("prompt_style", "default")
+        
         # Step 1: Create initial content if not provided
         if not has_initial_content:
             if not query:
@@ -79,9 +84,9 @@ class CriticReviewPattern(Pattern):
                 
             # Get created content
             content = creation_result.output_data.get("result", "")
-            context.set_output("initial_content", content)
+            context.set_output("original_content", content)
         else:
-            context.set_output("initial_content", content)
+            context.set_output("original_content", content)
         
         # Step 2: Critic review
         if not critic_agent_id:
@@ -92,9 +97,20 @@ class CriticReviewPattern(Pattern):
         criteria_text = ""
         if criteria:
             criteria_text = "Focus on these specific criteria:\n" + "\n".join([f"- {c}" for c in criteria])
+        
+        try:
+            # Get critic prompt template
+            critic_prompt_template = prompt_registry.get_template(
+                "verification.critic_review",
+                version=prompt_style
+            )["critic"]["content"]
             
-        # Create the critic task
-        critic_prompt = f"""Review the following content critically. Identify issues, errors, or areas for improvement.
+            # Replace variables
+            critic_prompt = critic_prompt_template.replace("{content}", content)
+            critic_prompt = critic_prompt.replace("{criteria_text}", criteria_text)
+        except (ValueError, KeyError):
+            # Fallback to default prompt if template not found
+            critic_prompt = f"""Review the following content critically. Identify issues, errors, or areas for improvement.
 {criteria_text}
 
 Content to review:
@@ -120,15 +136,26 @@ Critical review:"""
             
         # Get criticism
         criticism = critic_result.output_data.get("result", "")
-        context.set_output("criticism", criticism)
+        context.set_output("critique", criticism)
         
         # Step 3: Revision based on critique
         if not reviser_agent_id:
             context.set_output("error", "No reviser agent specified")
             return
+        
+        try:
+            # Get revision prompt template
+            revision_prompt_template = prompt_registry.get_template(
+                "verification.critic_review",
+                version=prompt_style
+            )["revision"]["content"]
             
-        # Create the revision task
-        revision_prompt = f"""Revise the following content based on the critical feedback.
+            # Replace variables
+            revision_prompt = revision_prompt_template.replace("{content}", content)
+            revision_prompt = revision_prompt.replace("{criticism}", criticism)
+        except (ValueError, KeyError):
+            # Fallback to default prompt if template not found
+            revision_prompt = f"""Revise the following content based on the critical feedback.
 
 Original content:
 {content}
@@ -170,6 +197,7 @@ Revised content:"""
         context.metadata["had_initial_content"] = has_initial_content
         context.metadata["critic_task_id"] = critic_task_id
         context.metadata["revision_task_id"] = revision_task_id
+        context.metadata["prompt_style"] = prompt_style
         if not has_initial_content:
             context.metadata["creation_task_id"] = creation_task_id
     
