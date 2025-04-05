@@ -1,0 +1,142 @@
+default:
+  initial:
+    content: |
+      Task: {task}
+
+      Please complete this task to the best of your ability:
+
+      {query}
+    description: "Default prompt for initial task execution"
+
+  reflection:
+    content: |
+      You are now reviewing the following response to this task:
+
+      Task: {task}
+
+      Response:
+      {response}
+
+      Please provide a thorough self-reflection on this response. Consider:
+      {criteria_text}
+
+      For each criterion, evaluate the response's strengths and weaknesses.
+      Identify specific opportunities for improvement.
+      
+      Your reflection:
+    description: "Prompt for reflection on the initial response"
+
+  improvement:
+    content: |
+      Based on the task and your original response:
+
+      Task: {task}
+
+      Original response:
+      {response}
+
+      And considering this reflection:
+      {reflection}
+
+      Please provide an improved response that addresses the issues identified in the reflection.
+      
+      Improved response:
+    description: "Prompt for generating an improved response"
+
+academic:
+  initial:
+    content: |
+      You are tasked with the following academic assignment:
+
+      {task}
+
+      Please approach this systematically and provide a well-structured response:
+
+      {query}
+    description: "Academic-focused initial prompt"
+
+  reflection:
+    content: |
+      You are now conducting a scholarly review of the following academic response:
+
+      Assignment: {task}
+
+      Response:
+      {response}
+
+      Please analyze this response according to these academic criteria:
+      {criteria_text}
+
+      For each criterion:
+      1. Assess the conceptual foundations and methodological approach
+      2. Identify theoretical strengths and limitations
+      3. Evaluate the quality of evidence and reasoning
+      4. Consider alternative interpretations or approaches
+      
+      Critical analysis:
+    description: "Academic-focused reflection prompt"
+
+  improvement:
+    content: |
+      Based on the academic assignment and your initial response:
+
+      Assignment: {task}
+
+      Initial submission:
+      {response}
+
+      And considering this scholarly critique:
+      {reflection}
+
+      Please revise your response to address the critique and strengthen the academic quality.
+      
+      Revised submission:
+    description: "Academic-focused improvement prompt"
+
+creative:
+  initial:
+    content: |
+      You're embarking on a creative challenge:
+
+      {task}
+
+      Let your imagination flow freely as you tackle this:
+
+      {query}
+    description: "Creativity-focused initial prompt"
+
+  reflection:
+    content: |
+      You're now examining your creative work with fresh eyes:
+
+      Creative challenge: {task}
+
+      Your work:
+      {response}
+
+      Reflect on your creative process and outcome considering:
+      {criteria_text}
+
+      Consider what inspired you, what constraints you faced, what risks you took or avoided,
+      and how you might push your creative boundaries further.
+      
+      Creative reflection:
+    description: "Creativity-focused reflection prompt"
+
+  improvement:
+    content: |
+      Drawing on your initial creative work:
+
+      Creative challenge: {task}
+
+      Initial creation:
+      {response}
+
+      And inspired by these reflections:
+      {reflection}
+
+      Now reimagine and transform your work. Don't just make small edits - take creative risks 
+      and explore new possibilities that your reflection has opened up.
+      
+      Reimagined creation:
+    description: "Creativity-focused improvement prompt"

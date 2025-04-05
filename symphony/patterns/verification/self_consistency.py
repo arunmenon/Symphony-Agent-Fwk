@@ -4,12 +4,13 @@ This module implements the Self Consistency pattern,
 which generates multiple responses and selects the most consistent one.
 """
 
-from typing import Dict, Any, List, Optional, Counter
+from typing import Dict, Any, List, Optional
 import json
 import re
 from collections import Counter
 
 from symphony.patterns.base import Pattern, PatternContext, PatternConfig
+from symphony.patterns.prompts import get_registry
 from symphony.core.task import Task
 
 
@@ -47,8 +48,21 @@ class SelfConsistencyPattern(Pattern):
         task_manager = context.get_service("task_manager")
         executor = context.get_service("enhanced_executor")
         
+        # Get prompt template
+        prompt_registry = get_registry()
+        prompt_style = self.config.metadata.get("prompt_style", "default")
+        
         # Format the prompt to encourage clear answers
-        prompt = f"""Please answer the following question clearly and concisely:
+        try:
+            # Get prompt template and render it with query
+            prompt = prompt_registry.render_template(
+                "verification.self_consistency",
+                {"query": query},
+                version=prompt_style
+            )
+        except ValueError:
+            # Fallback to default prompt if template not found
+            prompt = f"""Please answer the following question clearly and concisely:
 
 {query}
 

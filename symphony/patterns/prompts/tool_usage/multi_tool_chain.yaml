@@ -1,0 +1,98 @@
+default:
+  content: |
+    You need to solve this problem using a sequence of tool operations:
+
+    {query}
+
+    Available tools:
+    {tools_description}
+
+    Plan and execute a multi-step tool chain to solve this problem.
+    For each step:
+    1. Select the appropriate tool
+    2. Determine the exact inputs needed
+    3. Execute the tool operation
+    4. Process the results
+    5. Decide the next step based on those results
+
+    Proceed systematically and document your reasoning at each step.
+  description: "Default prompt for multi-tool chain pattern"
+
+technical:
+  content: |
+    Technical problem: {query}
+
+    Tools available for implementation:
+    {tools_description}
+
+    Implement a solution pipeline using the available tools.
+    Follow these implementation requirements:
+
+    1. Design a modular tool chain architecture
+    2. Define clear interfaces between each processing stage
+    3. Specify error handling and boundary conditions
+    4. Document any assumptions about data formats
+    5. Include validation checks at critical processing points
+    6. Optimize the sequence for performance and reliability
+
+    Proceed with systematic implementation:
+  description: "Technical prompt for software engineering and data processing applications"
+
+research:
+  content: |
+    Research question: {query}
+
+    Research tools available:
+    {tools_description}
+
+    Design and execute a systematic research process using these tools.
+    Your methodology should:
+
+    1. Start with broad exploration to understand the problem space
+    2. Progressively narrow your focus based on initial findings
+    3. Follow information trails where evidence is strongest
+    4. Cross-validate findings using multiple tools/approaches
+    5. Synthesize information at each stage before proceeding
+    6. Document uncertainties and limitations throughout
+
+    Begin your research process:
+  description: "Research-oriented prompt for information gathering and analysis"
+
+creative:
+  content: |
+    Creative challenge: {query}
+
+    Creative tools at your disposal:
+    {tools_description}
+
+    Use these tools to create an innovative solution through a series of creative operations.
+    Your creative process should:
+
+    1. Begin with divergent exploration to generate possibilities
+    2. Experiment with unexpected tool combinations
+    3. Iterate on promising directions
+    4. Refine your approach based on what emerges
+    5. Develop a cohesive final creation that addresses the challenge
+
+    Let your creative process unfold:
+  description: "Creative prompt for design and content creation applications"
+
+analytical:
+  content: |
+    Analytical problem: {query}
+
+    Analytical tools available:
+    {tools_description}
+
+    Construct a systematic analytical workflow to solve this problem.
+    Your analytical approach should:
+
+    1. Begin with data preparation and validation
+    2. Proceed through progressive stages of analysis
+    3. Apply appropriate transformations at each step
+    4. Extract meaningful insights from intermediate results
+    5. Build toward a comprehensive answer with supporting evidence
+    6. Include confidence assessments for your conclusions
+
+    Start your analytical process:
+  description: "Analytical prompt for data analysis and problem-solving applications"

@@ -1,0 +1,43 @@
+default:
+  content: |
+    Please answer the following question clearly and concisely:
+
+    {query}
+
+    Your answer:
+  description: "Standard prompt for self-consistency pattern that encourages direct answers"
+
+concise:
+  content: |
+    Answer this question with a short, direct response:
+
+    {query}
+  description: "Brief prompt that strongly encourages very concise answers"
+
+detailed:
+  content: |
+    Please answer the following question clearly and concisely:
+
+    {query}
+
+    First, think through the problem step-by-step.
+    Then, provide your final answer in a clear, direct manner.
+  description: "Detailed prompt that encourages reasoning before answering"
+
+numerical:
+  content: |
+    Answer the following numerical problem:
+
+    {query}
+
+    Provide your final numerical answer without additional explanation.
+  description: "Prompt focused on numerical problems with clear answer format"
+
+multiple_choice:
+  content: |
+    Please select the correct answer to this multiple-choice question:
+
+    {query}
+
+    Choose the single best answer from the options above. Only provide the letter of your answer.
+  description: "Prompt for multiple-choice questions that specifies output format"

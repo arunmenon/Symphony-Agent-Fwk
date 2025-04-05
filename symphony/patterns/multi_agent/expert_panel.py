@@ -10,6 +10,7 @@ import json
 import asyncio
 
 from symphony.patterns.base import Pattern, PatternContext, PatternConfig
+from symphony.patterns.prompts import get_registry
 from symphony.core.task import Task
 
 
@@ -62,11 +63,26 @@ class ExpertPanelPattern(Pattern):
         task_manager = context.get_service("task_manager")
         executor = context.get_service("enhanced_executor")
         
+        # Get prompt template
+        prompt_registry = get_registry()
+        prompt_style = self.config.metadata.get("prompt_style", "default")
+        
         # Step 1: Generate expert responses for each perspective
         expert_tasks = []
         for perspective in perspectives:
-            # Create prompt for this expert
-            expert_prompt = f"""You are an expert analyzing this question from the {perspective} perspective.
+            try:
+                # Get expert prompt template and render
+                expert_template = prompt_registry.get_template(
+                    "multi_agent.expert_panel", 
+                    version=prompt_style
+                )["expert"]["content"]
+                
+                # Replace variables
+                expert_prompt = expert_template.replace("{perspective}", perspective)
+                expert_prompt = expert_prompt.replace("{query}", query)
+            except (ValueError, KeyError):
+                # Fallback to default prompt if template not found
+                expert_prompt = f"""You are an expert analyzing this question from the {perspective} perspective.
             
 Question: {query}
 
@@ -100,19 +116,36 @@ Focus on the unique contributions and considerations that the {perspective} view
         context.set_output("expert_opinions", expert_results)
         
         # Step 2: Synthesize expert insights
-        synthesis_prompt = f"""You are tasked with synthesizing the insights from multiple experts who have analyzed this question:
+        try:
+            # Get synthesis prompt template
+            synthesis_template = prompt_registry.get_template(
+                "multi_agent.expert_panel", 
+                version=prompt_style
+            )["synthesis"]["content"]
+            
+            # Format expert opinions text
+            expert_opinions_text = ""
+            for perspective, opinion in expert_results.items():
+                expert_opinions_text += f"\n## {perspective.upper()} PERSPECTIVE:\n{opinion}\n\n"
+            
+            # Replace variables
+            synthesis_prompt = synthesis_template.replace("{query}", query)
+            synthesis_prompt = synthesis_prompt.replace("{expert_opinions}", expert_opinions_text)
+        except (ValueError, KeyError):
+            # Fallback to default prompt if template not found
+            synthesis_prompt = f"""You are tasked with synthesizing the insights from multiple experts who have analyzed this question:
 
 Question: {query}
 
 The experts have provided the following perspectives:
 
 """
-        
-        # Add each expert's perspective
-        for perspective, opinion in expert_results.items():
-            synthesis_prompt += f"\n## {perspective.upper()} PERSPECTIVE:\n{opinion}\n\n"
-        
-        synthesis_prompt += """
+            
+            # Add each expert's perspective
+            for perspective, opinion in expert_results.items():
+                synthesis_prompt += f"\n## {perspective.upper()} PERSPECTIVE:\n{opinion}\n\n"
+            
+            synthesis_prompt += """
 Now, synthesize these diverse perspectives into a comprehensive analysis. Your synthesis should:
 1. Identify common themes and insights across perspectives
 2. Highlight unique contributions from each perspective
@@ -152,3 +185,4 @@ Your synthesis:"""
         context.metadata["num_perspectives"] = len(perspectives)
         context.metadata["perspectives"] = perspectives
         context.metadata["synthesis_task_id"] = synthesis_task_id
+        context.metadata["prompt_style"] = prompt_style

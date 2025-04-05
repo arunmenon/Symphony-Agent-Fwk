@@ -1,0 +1,172 @@
+default:
+  plan:
+    content: |
+      You need to plan a sequence of tool calls to solve this problem:
+
+      {query}
+
+      Available tools:
+      {tools_description}
+
+      Create a plan that outlines:
+      1. Which tools you will use
+      2. The order of tool operations
+      3. How data will flow between tools
+      4. What inputs you will provide to each tool
+      5. How you will interpret and use the results
+
+      Your plan:
+    description: "Default prompt for planning tool usage"
+
+  verification:
+    content: |
+      Review this plan for using tools to solve the problem:
+
+      Problem: {query}
+
+      Plan:
+      {plan}
+
+      Available tools:
+      {tools_description}
+
+      Critically evaluate this plan for:
+      1. Correctness: Will the tools work as described?
+      2. Completeness: Does the plan cover all necessary steps?
+      3. Efficiency: Is this the most direct approach?
+      4. Safety: Are there any potential risks or errors?
+      5. Data handling: Is all needed data captured and passed correctly?
+
+      If you identify any issues, suggest specific improvements.
+
+      Verification:
+    description: "Prompt for verifying a tool usage plan"
+
+  execution:
+    content: |
+      Execute the following verified plan to solve this problem:
+
+      Problem: {query}
+
+      Plan:
+      {plan}
+
+      Verification feedback:
+      {verification}
+
+      Execute the plan step by step, following any modifications suggested in the verification.
+      For each step, show:
+      1. The exact tool call being made
+      2. The inputs provided
+      3. The results received
+      4. Your interpretation of the results
+
+      Execution:
+    description: "Prompt for executing a verified tool plan"
+
+detailed:
+  plan:
+    content: |
+      You need to create a comprehensive and detailed plan for using tools to solve this problem:
+
+      PROBLEM STATEMENT:
+      {query}
+
+      AVAILABLE TOOLS:
+      {tools_description}
+
+      Create a detailed plan that includes:
+      1. TOOL SELECTION: Which specific tools will be used and why
+      2. EXECUTION SEQUENCE: The precise order of operations 
+      3. DATA FLOW: How information will be passed between steps
+      4. INPUT SPECIFICATIONS: Exact parameters and values for each tool
+      5. OUTPUT HANDLING: How you will process and utilize each tool's output
+      6. ERROR HANDLING: Contingency plans if tools return unexpected results
+      7. VALIDATION APPROACH: How you will verify the final solution
+
+      DETAILED PLAN:
+    description: "Detailed prompt for planning tool usage with comprehensive specifications"
+
+  verification:
+    content: |
+      Perform a rigorous verification of this tool usage plan:
+
+      PROBLEM STATEMENT:
+      {query}
+
+      PROPOSED PLAN:
+      {plan}
+
+      AVAILABLE TOOLS:
+      {tools_description}
+
+      Conduct a thorough verification across these dimensions:
+
+      1. TOOL CAPABILITY ALIGNMENT
+         - Are the selected tools appropriate for their intended use?
+         - Do the tools have the necessary features and limitations?
+      
+      2. LOGIC AND FLOW VERIFICATION
+         - Is the sequence of operations logically sound?
+         - Are there any missing steps or dependencies?
+         - Are there any redundant or unnecessary operations?
+      
+      3. PARAMETER VALIDATION
+         - Are all required parameters specified correctly?
+         - Are parameter formats and values appropriate?
+      
+      4. ERROR CASE ANALYSIS
+         - What could go wrong at each step?
+         - Are there appropriate error handling mechanisms?
+      
+      5. EFFICIENCY ASSESSMENT
+         - Is this the most efficient approach?
+         - Are there opportunities to reduce complexity?
+
+      For each issue identified, provide:
+      - The specific problematic component
+      - Why it's problematic
+      - A concrete recommendation for improvement
+
+      VERIFICATION REPORT:
+    description: "Detailed prompt for thorough verification of tool usage plans"
+
+  execution:
+    content: |
+      Execute this verified plan with meticulous attention to detail:
+
+      PROBLEM STATEMENT:
+      {query}
+
+      EXECUTION PLAN:
+      {plan}
+
+      VERIFICATION NOTES:
+      {verification}
+
+      EXECUTION PROTOCOL:
+      
+      For each step in the plan:
+      
+      1. PRE-EXECUTION SETUP
+         - Confirm prerequisites are met
+         - Prepare input data in the correct format
+      
+      2. EXECUTION DETAILS
+         - Document the exact tool being called
+         - Record all parameters and their values
+         - Log the precise API call or function invocation
+      
+      3. RESULT CAPTURE
+         - Capture the complete tool output
+         - Store relevant data for subsequent steps
+      
+      4. POST-EXECUTION ANALYSIS
+         - Validate the results against expectations
+         - Process the output as required for the next step
+         - Document any deviations from the expected behavior
+      
+      Proceed with execution, documenting each step according to this protocol:
+
+      DETAILED EXECUTION LOG:
+    description: "Detailed prompt for structured execution of verified tool plans"

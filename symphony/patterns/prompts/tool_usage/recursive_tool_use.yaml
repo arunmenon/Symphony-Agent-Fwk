@@ -1,0 +1,154 @@
+default:
+  planning:
+    content: |
+      You need to solve this problem, which may require multiple levels of tool usage:
+
+      {query}
+
+      Available tools:
+      {tools_description}
+
+      Some problems require decomposing into sub-problems that each use tools, and those results might need to be processed by additional tool calls.
+
+      Plan a solution that includes:
+      1. The primary tool operations needed
+      2. Potential sub-operations that might be required based on initial results
+      3. How results will be combined across different levels
+      
+      Your adaptive plan:
+    description: "Default prompt for planning recursive tool usage"
+    
+  execution:
+    content: |
+      Execute this solution recursively, using tools within tools as needed:
+
+      Problem: {query}
+      
+      Plan: {plan}
+
+      For each step:
+      1. Execute the tool operation
+      2. Analyze the results
+      3. Determine if additional tool operations are needed to process these results
+      4. If so, plan and execute those secondary operations
+      5. Continue this recursive process until you have the final solution
+      
+      Document each level of tool usage clearly.
+      
+      Solution:
+    description: "Default prompt for executing recursive tool usage"
+
+detailed:
+  planning:
+    content: |
+      This problem may require a nested, multi-level approach with tools calling other tools:
+
+      PROBLEM STATEMENT:
+      {query}
+
+      AVAILABLE TOOLS:
+      {tools_description}
+
+      Develop a recursive solution plan with these components:
+
+      1. PRIMARY GOAL ANALYSIS
+         - Break down the overall problem into core components
+         - Identify primary tool operations for each component
+      
+      2. DEPENDENCY MAPPING
+         - Create a directed graph of tool operations
+         - Identify which operations depend on results from others
+      
+      3. RECURSIVE PATTERNS
+         - Identify where tool output might require further tool processing
+         - Define termination conditions for recursive operations
+      
+      4. INTEGRATION STRATEGY
+         - Specify how to combine results across different branches
+         - Define the final synthesis method
+
+      Present your plan as a hierarchical structure showing the potential recursive paths.
+      
+      RECURSIVE SOLUTION ARCHITECTURE:
+    description: "Detailed prompt for planning complex recursive tool operations"
+    
+  execution:
+    content: |
+      Execute this recursive solution with careful tracking of execution context and depth:
+
+      PROBLEM: {query}
+      
+      PLAN: {plan}
+
+      EXECUTION PROTOCOL:
+      
+      For each operation in your execution tree:
+      
+      1. CONTEXT INITIALIZATION
+         - Document the current depth level
+         - Specify which parent operation spawned this operation (if applicable)
+         - Record the specific goal of this operation
+      
+      2. EXECUTION
+         - Select and invoke the appropriate tool
+         - Capture complete results
+      
+      3. RESULT ANALYSIS
+         - Evaluate if the operation achieved its goal
+         - Determine if further recursive processing is needed
+      
+      4. RECURSIVE BRANCHING (if needed)
+         - Formulate sub-operations
+         - Track the parent-child relationship
+         - Maintain execution context across levels
+      
+      5. UPWARD PROPAGATION
+         - Return processed results to the parent operation
+         - Document how this contributes to the overall solution
+      
+      As you execute, maintain a clear hierarchy showing the recursive structure.
+      
+      RECURSIVE EXECUTION LOG:
+    description: "Detailed prompt for executing and tracking complex recursive tool operations"
+
+technical:
+  planning:
+    content: |
+      Design a recursive computational solution for this technical problem:
+
+      {query}
+
+      Available computational tools:
+      {tools_description}
+
+      Create a recursive algorithm design that includes:
+      
+      1. Base cases and termination conditions
+      2. Recursive case definitions
+      3. State management between recursive calls
+      4. Data transformation at each level
+      5. Result aggregation strategy
+      6. Optimization considerations to prevent unnecessary recursion
+      
+      Your recursive algorithm design:
+    description: "Technical prompt for designing recursive algorithms with tools"
+    
+  execution:
+    content: |
+      Implement and execute this recursive algorithm using the available tools:
+
+      Problem specification: {query}
+      
+      Algorithm design: {plan}
+
+      Implementation approach:
+      1. Implement base cases first
+      2. Build each recursive case with proper state management
+      3. Add appropriate error handling
+      4. Track execution depth and prevent stack overflow
+      5. Optimize by caching results of expensive operations
+      
+      Execute with careful instrumentation to monitor the recursive process.
+      
+      Implementation and execution:
+    description: "Technical prompt for implementing and executing recursive algorithms with tools"

@@ -1,0 +1,105 @@
+default:
+  expert:
+    content: |
+      You are an expert analyzing this question from the {perspective} perspective.
+              
+      Question: {query}
+
+      Provide your analysis, insights, and recommendations from a {perspective} perspective.
+      Focus on the unique contributions and considerations that the {perspective} viewpoint brings to this issue.
+
+      {perspective} expert analysis:
+    description: "Prompt for individual expert in the panel to provide perspective"
+    
+  synthesis:
+    content: |
+      You are tasked with synthesizing the insights from multiple experts who have analyzed this question:
+
+      Question: {query}
+
+      The experts have provided the following perspectives:
+
+      {expert_opinions}
+
+      Now, synthesize these diverse perspectives into a comprehensive analysis. Your synthesis should:
+      1. Identify common themes and insights across perspectives
+      2. Highlight unique contributions from each perspective
+      3. Note any contradictions or tensions between different viewpoints
+      4. Provide integrated recommendations that draw on the full range of expertise
+
+      Your synthesis:
+    description: "Prompt for synthesizing multiple expert perspectives"
+
+academic:
+  expert:
+    content: |
+      You are an academic expert in the field of {perspective}. Please analyze the following question from your specialized disciplinary perspective:
+              
+      Question: {query}
+
+      In your response, please:
+      - Apply theoretical frameworks and methodologies from {perspective}
+      - Reference relevant research and scholarly insights
+      - Identify gaps in current understanding
+      - Propose directions for further investigation 
+      - Consider limitations of analyzing this issue from your perspective alone
+
+      {perspective} expert analysis:
+    description: "Academic-focused expert prompt with scholarly approach"
+    
+  synthesis:
+    content: |
+      As a meta-researcher skilled in transdisciplinary synthesis, analyze the following expert perspectives on this question:
+
+      Question: {query}
+
+      Expert analyses:
+      {expert_opinions}
+
+      Please synthesize these disciplinary perspectives into a comprehensive scholarly analysis:
+      1. Compare and contrast methodological approaches and assumptions
+      2. Identify areas of scholarly consensus and disagreement
+      3. Discuss how different knowledge traditions frame the question differently
+      4. Create an integrated conceptual framework that transcends disciplinary boundaries
+      5. Note limitations of this synthetic analysis and propose interdisciplinary research directions
+
+      Transdisciplinary synthesis:
+    description: "Academic synthesis prompt with scholarly integration focus"
+
+business:
+  expert:
+    content: |
+      You are a subject matter expert in {perspective} analyzing a business question:
+              
+      Question: {query}
+
+      Provide your professional analysis with:
+      - Key insights from the {perspective} domain
+      - Business implications and considerations
+      - Specific actionable recommendations
+      - Potential risks and mitigations
+      - Success metrics to track
+
+      Make your analysis practical, actionable and focused on business value.
+
+      {perspective} expert analysis:
+    description: "Business-oriented expert prompt with actionable focus"
+    
+  synthesis:
+    content: |
+      As a business strategy consultant, synthesize these cross-functional expert perspectives:
+
+      Business Question: {query}
+
+      Expert inputs:
+      {expert_opinions}
+
+      Create an executive summary that:
+      1. Distills key business insights from each functional area
+      2. Aligns perspectives into a cohesive business strategy
+      3. Prioritizes recommendations based on impact and feasibility 
+      4. Addresses implementation challenges and risks
+      5. Provides clear next steps with ownership and timeline considerations
+
+      Executive synthesis:
+    description: "Business synthesis prompt with strategic integration focus"

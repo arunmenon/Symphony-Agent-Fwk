@@ -159,6 +159,180 @@ async def test_reflection_pattern(symphony_with_agent):
 
 
 @pytest.mark.asyncio
+async def test_self_consistency_pattern(symphony_with_agent):
+    """Test the self-consistency pattern with GPT-4o."""
+    symphony, agent_id = symphony_with_agent
+    
+    # Print test information
+    print("\n" + "="*80)
+    print("TESTING SELF-CONSISTENCY PATTERN")
+    print("="*80)
+    
+    # Test query with multiple possible interpretations
+    query = "What is the capital of Georgia?"
+    print(f"\nQuery: {query}")
+    
+    try:
+        # Execute the self-consistency pattern
+        result = await symphony.patterns.apply_verification_pattern(
+            "self_consistency",
+            query,
+            config={
+                "agent_roles": {"reasoner": agent_id},
+                "metadata": {
+                    "num_samples": 3,
+                    "threshold": 0.7,
+                    "prompt_style": "detailed"  # Use the detailed prompt style
+                }
+            }
+        )
+        
+        # Print the response for validation
+        print("\nSelf-Consistency Pattern Result:")
+        print(format_result(result))
+        
+        if isinstance(result, dict) and "result" in result:
+            result_data = result["result"]
+            if isinstance(result_data, dict):
+                if "samples" in result_data:
+                    print("\nSamples Generated:")
+                    for i, sample in enumerate(result_data["samples"]):
+                        print(f"  Sample {i+1}: {sample[:100]}...")
+                if "top_answer" in result_data:
+                    print(f"\nTop Answer: {result_data['top_answer']}")
+                if "consistency_score" in result_data:
+                    print(f"Consistency Score: {result_data['consistency_score']}")
+        
+        # Basic validation
+        assert result is not None, "Pattern should return a result"
+        print("\n✅ Test passed: Self-Consistency pattern executed successfully")
+        
+        # Return for further analysis if needed
+        return result
+    except Exception as e:
+        print(f"\n❌ Error executing pattern: {e}")
+        raise
+
+
+@pytest.mark.asyncio
+async def test_expert_panel_pattern(symphony_with_agent):
+    """Test the expert panel pattern with GPT-4o."""
+    symphony, agent_id = symphony_with_agent
+    
+    # Print test information
+    print("\n" + "="*80)
+    print("TESTING EXPERT PANEL PATTERN")
+    print("="*80)
+    
+    # Test query for expert panel
+    query = "What are the environmental, economic, and social implications of transitioning to renewable energy?"
+    perspectives = ["environmental scientist", "economist", "social policy expert"]
+    print(f"\nQuery: {query}")
+    print(f"Perspectives: {', '.join(perspectives)}")
+    
+    try:
+        # Execute the expert panel pattern
+        result = await symphony.patterns.apply_multi_agent_pattern(
+            "expert_panel",
+            query,
+            config={
+                "agent_roles": {"moderator": agent_id, "synthesizer": agent_id},
+                "metadata": {
+                    "perspectives": perspectives,
+                    "prompt_style": "academic"  # Use the academic prompt style
+                }
+            }
+        )
+        
+        # Print the response for validation
+        print("\nExpert Panel Pattern Result:")
+        if isinstance(result, dict) and "result" in result:
+            result_data = result["result"]
+            if isinstance(result_data, dict):
+                if "expert_opinions" in result_data:
+                    print("\nExpert Opinions:")
+                    for perspective, opinion in result_data["expert_opinions"].items():
+                        print(f"\n--- {perspective.upper()} ---")
+                        print(f"{opinion[:150]}...")
+                if "synthesis" in result_data:
+                    print("\nSynthesis:")
+                    print(f"{result_data['synthesis'][:250]}...")
+        
+        # Basic validation
+        assert result is not None, "Pattern should return a result"
+        print("\n✅ Test passed: Expert Panel pattern executed successfully")
+        
+        # Return for further analysis if needed
+        return result
+    except Exception as e:
+        print(f"\n❌ Error executing pattern: {e}")
+        raise
+
+
+@pytest.mark.asyncio
+async def test_few_shot_pattern(symphony_with_agent):
+    """Test the few-shot learning pattern with GPT-4o."""
+    symphony, agent_id = symphony_with_agent
+    
+    # Print test information
+    print("\n" + "="*80)
+    print("TESTING FEW-SHOT LEARNING PATTERN")
+    print("="*80)
+    
+    # Test summarization task
+    task = "Summarize the following text in one sentence"
+    query = "The human brain has approximately 86 billion neurons, which are connected by trillions of synapses. Each neuron can fire 5-50 times per second. The brain consumes about 20% of the body's energy despite being only 2% of its weight. The brain's structure includes the cerebrum, cerebellum, and brainstem, each responsible for different functions ranging from conscious thought to involuntary processes."
+    
+    # Examples for the few-shot pattern
+    examples = [
+        {
+            "input": "The process of photosynthesis in plants involves capturing light energy to convert carbon dioxide and water into glucose and oxygen. This process takes place in the chloroplasts, primarily in the leaves. The glucose produced is used as energy for the plant's growth and functioning.",
+            "output": "Photosynthesis is the process where plants use light energy to convert CO2 and water into glucose and oxygen in their chloroplasts, providing energy for plant growth."
+        },
+        {
+            "input": "Machine learning is a subset of artificial intelligence that focuses on developing systems that learn from data. It involves algorithms that improve automatically through experience. Common applications include image recognition, recommendation systems, and natural language processing.",
+            "output": "Machine learning is an AI subset where systems use algorithms to learn from data and improve automatically, powering applications like image recognition and NLP."
+        }
+    ]
+    
+    print(f"\nTask: {task}")
+    print(f"Query: {query[:100]}...")
+    
+    try:
+        # Execute the few-shot pattern
+        result = await symphony.patterns.apply_learning_pattern(
+            "few_shot",
+            query,
+            config={
+                "agent_roles": {"performer": agent_id},
+                "metadata": {
+                    "prompt_style": "academic",  # Use the academic prompt style
+                    "examples": examples,
+                    "task": task
+                }
+            }
+        )
+        
+        # Print the response for validation
+        print("\nFew-Shot Learning Pattern Result:")
+        if isinstance(result, dict) and "result" in result:
+            response = result["result"]
+            print(f"\nResponse: {response}")
+        else:
+            print(format_result(result))
+        
+        # Basic validation
+        assert result is not None, "Pattern should return a result"
+        print("\n✅ Test passed: Few-Shot Learning pattern executed successfully")
+        
+        # Return for further analysis if needed
+        return result
+    except Exception as e:
+        print(f"\n❌ Error executing pattern: {e}")
+        raise
+
+
+@pytest.mark.asyncio
 async def test_patterns_batch(symphony_with_agent):
     """Run all pattern tests in a batch for comprehensive validation."""
     print("\n" + "="*80)
@@ -173,6 +347,15 @@ async def test_patterns_batch(symphony_with_agent):
         
         # Run Reflection pattern test
         results["reflection"] = await test_reflection_pattern(symphony_with_agent)
+        
+        # Run Self-Consistency pattern test
+        results["self_consistency"] = await test_self_consistency_pattern(symphony_with_agent)
+        
+        # Run Expert Panel pattern test
+        results["expert_panel"] = await test_expert_panel_pattern(symphony_with_agent)
+        
+        # Run Few-Shot Learning pattern test
+        results["few_shot"] = await test_few_shot_pattern(symphony_with_agent)
         
         # Print summary
         successful_patterns = [name for name, result in results.items() if result is not None]
