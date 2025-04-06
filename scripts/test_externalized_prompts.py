@@ -19,6 +19,7 @@ from tests.integration.test_patterns_integration import (
     test_self_consistency_pattern,
     test_expert_panel_pattern,
     test_few_shot_pattern,
+    test_reflection_pattern,
     symphony_with_agent
 )
 
@@ -27,7 +28,8 @@ async def main():
     """Run integration tests for externalized prompts."""
     
     parser = argparse.ArgumentParser(description='Run pattern integration tests with externalized prompts')
-    parser.add_argument('--pattern', choices=['self_consistency', 'expert_panel', 'few_shot', 'all'], 
+    parser.add_argument('--pattern', 
+                        choices=['self_consistency', 'expert_panel', 'few_shot', 'reflection', 'all'], 
                         default='all', help='Which pattern to test (default: all)')
     parser.add_argument('--model', type=str, default='gpt-4o-mini',
                         help='Model to use for testing (default: gpt-4o-mini)')
@@ -52,6 +54,10 @@ async def main():
     if args.pattern == 'all' or args.pattern == 'few_shot':
         print("\nTesting Few-Shot Learning pattern...")
         await test_few_shot_pattern(sym_agent)
+    
+    if args.pattern == 'all' or args.pattern == 'reflection':
+        print("\nTesting Reflection pattern...")
+        await test_reflection_pattern(sym_agent)
     
     print("\nAll tests completed successfully!")
 

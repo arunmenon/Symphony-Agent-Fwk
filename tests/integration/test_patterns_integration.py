@@ -123,7 +123,10 @@ async def test_reflection_pattern(symphony_with_agent):
                 "criteria": [
                     "Simplicity: Uses age-appropriate language and concepts",
                     "Accuracy: Maintains factual correctness despite simplification"
-                ]
+                ],
+                "metadata": {
+                    "prompt_style": "creative"  # Use the creative prompt style
+                }
             }
         )
         
