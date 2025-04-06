@@ -53,20 +53,11 @@ class SelfConsistencyPattern(Pattern):
         prompt_style = self.config.metadata.get("prompt_style", "default")
         
         # Format the prompt to encourage clear answers
-        try:
-            # Get prompt template and render it with query
-            prompt = prompt_registry.render_template(
-                "verification.self_consistency",
-                {"query": query},
-                version=prompt_style
-            )
-        except ValueError:
-            # Fallback to default prompt if template not found
-            prompt = f"""Please answer the following question clearly and concisely:
-
-{query}
-
-Your answer:"""
+        prompt = prompt_registry.render_template(
+            "verification.self_consistency",
+            {"query": query},
+            version=prompt_style
+        )
         
         # Create and execute multiple tasks
         tasks = []

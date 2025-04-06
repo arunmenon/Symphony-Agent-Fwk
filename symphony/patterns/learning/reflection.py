@@ -65,24 +65,14 @@ class ReflectionPattern(Pattern):
         prompt_style = self.config.metadata.get("prompt_style", "default")
         
         # Prepare initial prompt
-        try:
-            # Get initial prompt template and render with variables
-            initial_prompt = prompt_registry.render_template(
-                "learning.reflection",
-                {
-                    "task": task,
-                    "query": query
-                },
-                version=prompt_style
-            )
-        except ValueError:
-            # Fallback to default prompt if template not found
-            initial_prompt = f"""
-            Task: {task}
-            
-            Please respond to the following:
-            {query}
-            """
+        initial_prompt = prompt_registry.render_template(
+            "learning.reflection",
+            {
+                "task": task,
+                "query": query
+            },
+            version=prompt_style
+        )
         
         try:
             # Get initial response
@@ -96,38 +86,17 @@ class ReflectionPattern(Pattern):
             # Prepare reflection prompt
             criteria_text = "\n".join([f"- {criterion}" for criterion in criteria])
             
-            try:
-                # Get reflection prompt template and render with variables
-                reflection_prompt = prompt_registry.render_template(
-                    "learning.reflection",
-                    {
-                        "task": task,
-                        "query": query,
-                        "response": initial_response,
-                        "criteria_text": criteria_text
-                    },
-                    version=f"{prompt_style}.reflection" if prompt_style else "reflection"
-                )
-            except ValueError:
-                # Fallback to default prompt if template not found
-                reflection_prompt = f"""
-                Task: {task}
-                
-                Original query: {query}
-                
-                Your initial response:
-                {initial_response}
-                
-                Please reflect on your response and evaluate it based on these criteria:
-                {criteria_text}
-                
-                For each criterion:
-                1. Rate your response (1-5 scale)
-                2. Explain the rating
-                3. Suggest specific improvements
-                
-                Then provide an overall assessment of your response and how it could be improved.
-                """
+            # Get reflection prompt template and render with variables
+            reflection_prompt = prompt_registry.render_template(
+                "learning.reflection",
+                {
+                    "task": task,
+                    "query": query,
+                    "response": initial_response,
+                    "criteria_text": criteria_text
+                },
+                version=f"{prompt_style}.reflection" if prompt_style else "reflection"
+            )
             
             # Get reflection
             reflection = await agent_service.execute_agent(
@@ -138,34 +107,16 @@ class ReflectionPattern(Pattern):
             context.set_output("reflection", reflection)
             
             # Prepare improvement prompt
-            try:
-                # Get improvement prompt template and render with variables
-                improvement_prompt = prompt_registry.render_template(
-                    "learning.reflection",
-                    {
-                        "task": task,
-                        "query": query,
-                        "response": initial_response,
-                        "reflection": reflection
-                    },
-                    version=f"{prompt_style}.improvement" if prompt_style else "improvement"
-                )
-            except ValueError:
-                # Fallback to default prompt if template not found
-                improvement_prompt = f"""
-                Task: {task}
-                
-                Original query: {query}
-                
-                Your initial response:
-                {initial_response}
-                
-                Your reflection:
-                {reflection}
-                
-                Based on your reflection, please provide an improved response to the original query.
-                Focus on addressing the specific weaknesses you identified while maintaining the strengths.
-                """
+            improvement_prompt = prompt_registry.render_template(
+                "learning.reflection",
+                {
+                    "task": task,
+                    "query": query,
+                    "response": initial_response,
+                    "reflection": reflection
+                },
+                version=f"{prompt_style}.improvement" if prompt_style else "improvement"
+            )
             
             # Get improved response
             final_response = await agent_service.execute_agent(
@@ -261,24 +212,14 @@ class IterativeReflectionPattern(ReflectionPattern):
         prompt_style = self.config.metadata.get("prompt_style", "default")
         
         # Prepare initial prompt
-        try:
-            # Get initial prompt template and render with variables
-            initial_prompt = prompt_registry.render_template(
-                "learning.reflection",
-                {
-                    "task": task,
-                    "query": query
-                },
-                version=prompt_style
-            )
-        except ValueError:
-            # Fallback to default prompt if template not found
-            initial_prompt = f"""
-            Task: {task}
-            
-            Please respond to the following:
-            {query}
-            """
+        initial_prompt = prompt_registry.render_template(
+            "learning.reflection",
+            {
+                "task": task,
+                "query": query
+            },
+            version=prompt_style
+        )
         
         try:
             # Get initial response
@@ -302,39 +243,18 @@ class IterativeReflectionPattern(ReflectionPattern):
                 # Prepare reflection prompt
                 criteria_text = "\n".join([f"- {criterion}" for criterion in criteria])
                 
-                try:
-                    # Get reflection prompt template and render with variables
-                    reflection_prompt = prompt_registry.render_template(
-                        "learning.reflection",
-                        {
-                            "task": task,
-                            "query": query,
-                            "response": current_response,
-                            "criteria_text": criteria_text,
-                            "iteration": i+1
-                        },
-                        version=f"{prompt_style}.reflection" if prompt_style else "reflection"
-                    )
-                except ValueError:
-                    # Fallback to default prompt if template not found
-                    reflection_prompt = f"""
-                    Task: {task}
-                    
-                    Original query: {query}
-                    
-                    Your current response (iteration {i+1}):
-                    {current_response}
-                    
-                    Please reflect on your response and evaluate it based on these criteria:
-                    {criteria_text}
-                    
-                    For each criterion:
-                    1. Rate your response (1-5 scale)
-                    2. Explain the rating
-                    3. Suggest specific improvements
-                    
-                    Then provide an overall assessment of your response and how it could be improved.
-                    """
+                # Get reflection prompt template and render with variables
+                reflection_prompt = prompt_registry.render_template(
+                    "learning.reflection",
+                    {
+                        "task": task,
+                        "query": query,
+                        "response": current_response,
+                        "criteria_text": criteria_text,
+                        "iteration": i+1
+                    },
+                    version=f"{prompt_style}.reflection" if prompt_style else "reflection"
+                )
                 
                 # Get reflection
                 reflection = await agent_service.execute_agent(
@@ -346,35 +266,17 @@ class IterativeReflectionPattern(ReflectionPattern):
                 child_context.set_output("reflection", reflection)
                 
                 # Prepare improvement prompt
-                try:
-                    # Get improvement prompt template and render with variables
-                    improvement_prompt = prompt_registry.render_template(
-                        "learning.reflection",
-                        {
-                            "task": task,
-                            "query": query,
-                            "response": current_response,
-                            "reflection": reflection,
-                            "iteration": i+1
-                        },
-                        version=f"{prompt_style}.improvement" if prompt_style else "improvement"
-                    )
-                except ValueError:
-                    # Fallback to default prompt if template not found
-                    improvement_prompt = f"""
-                    Task: {task}
-                    
-                    Original query: {query}
-                    
-                    Your current response (iteration {i+1}):
-                    {current_response}
-                    
-                    Your reflection:
-                    {reflection}
-                    
-                    Based on your reflection, please provide an improved response to the original query.
-                    Focus on addressing the specific weaknesses you identified while maintaining the strengths.
-                    """
+                improvement_prompt = prompt_registry.render_template(
+                    "learning.reflection",
+                    {
+                        "task": task,
+                        "query": query,
+                        "response": current_response,
+                        "reflection": reflection,
+                        "iteration": i+1
+                    },
+                    version=f"{prompt_style}.improvement" if prompt_style else "improvement"
+                )
                 
                 # Get improved response
                 improved_response = await agent_service.execute_agent(

@@ -71,29 +71,16 @@ class FewShotPattern(Pattern):
         prompt_style = self.config.metadata.get("prompt_style", "default")
         
         # Prepare few-shot prompt
-        try:
-            # Get prompt template and render with variables
-            few_shot_prompt = prompt_registry.render_template(
-                "learning.few_shot",
-                {
-                    "task": task,
-                    "examples_text": examples_text,
-                    "format_instructions": format_instructions,
-                    "query": query
-                },
-                version=prompt_style
-            )
-        except ValueError:
-            # Fallback to default prompt if template not found
-            few_shot_prompt = f"""
-            Task: {task}
-            
-            {examples_text}
-            {format_instructions}
-            
-            Input: {query}
-            Output:
-            """
+        few_shot_prompt = prompt_registry.render_template(
+            "learning.few_shot",
+            {
+                "task": task,
+                "examples_text": examples_text,
+                "format_instructions": format_instructions,
+                "query": query
+            },
+            version=prompt_style
+        )
         
         # Execute agent with few-shot prompt
         try:
@@ -129,51 +116,11 @@ class FewShotPattern(Pattern):
         """
         # Try to load standard examples from the template file
         standard_examples = {}
-        try:
-            prompt_registry = get_registry()
-            template_data = prompt_registry.get_template("learning.few_shot")
-            
-            # Extract standard examples from template if available
-            if "standard_examples" in template_data:
-                standard_examples = template_data["standard_examples"]
-        except (ValueError, KeyError):
-            # Fallback to hardcoded examples if template loading fails
-            standard_examples = {
-                "summarization": [
-                    {
-                        "input": "The process of photosynthesis in plants involves capturing light energy to convert carbon dioxide and water into glucose and oxygen. This process takes place in the chloroplasts, primarily in the leaves. The glucose produced is used as energy for the plant's growth and functioning.",
-                        "output": "Photosynthesis is the process where plants use light energy to convert CO2 and water into glucose and oxygen in their chloroplasts, providing energy for plant growth."
-                    },
-                    {
-                        "input": "Machine learning is a subset of artificial intelligence that focuses on developing systems that learn from data. It involves algorithms that improve automatically through experience. Common applications include image recognition, recommendation systems, and natural language processing.",
-                        "output": "Machine learning is an AI subset where systems use algorithms to learn from data and improve automatically, powering applications like image recognition and NLP."
-                    }
-                ],
-                "classification": [
-                    {
-                        "input": "The customer service was excellent, and they resolved my issue quickly.",
-                        "output": "Positive"
-                    },
-                    {
-                        "input": "The product arrived broken and customer service never responded to my complaint.",
-                        "output": "Negative"
-                    },
-                    {
-                        "input": "The service was okay, not great but not terrible either.",
-                        "output": "Neutral"
-                    }
-                ],
-                "extraction": [
-                    {
-                        "input": "My name is John Smith and I need to schedule an appointment for March 15th at 2:30pm. My phone number is 555-123-4567.",
-                        "output": "{'name': 'John Smith', 'date': '2023-03-15', 'time': '14:30', 'phone': '555-123-4567'}"
-                    },
-                    {
-                        "input": "Please schedule a meeting with Jane Doe (jane.doe@example.com) next Monday at 10:00am to discuss the quarterly report.",
-                        "output": "{'person': 'Jane Doe', 'email': 'jane.doe@example.com', 'day': 'Monday', 'time': '10:00', 'topic': 'quarterly report'}"
-                    }
-                ]
-            }
+        prompt_registry = get_registry()
+        template_data = prompt_registry.get_template("learning.few_shot")
+        
+        # Extract standard examples from template
+        standard_examples = template_data["standard_examples"]
         
         # Use provided examples or fall back to standard examples
         task_examples = examples or standard_examples.get(task_type, [])
