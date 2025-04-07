@@ -6,6 +6,7 @@ the application.
 """
 
 from typing import Dict, Any, Optional, Type
+
 from symphony.persistence.repository import Repository
 from symphony.core.agent_config import AgentConfig
 from symphony.core.task import Task
@@ -14,6 +15,8 @@ from symphony.core.task_manager import TaskManager
 from symphony.execution.workflow_tracker import Workflow, WorkflowTracker
 from symphony.execution.enhanced_agent import EnhancedExecutor
 from symphony.execution.router import TaskRouter, RoutingStrategy
+
+__all__ = ['ServiceRegistry']
 
 class ServiceRegistry:
     """Registry for Symphony services and components.
@@ -87,6 +90,17 @@ class ServiceRegistry:
         if name not in self.services:
             raise ValueError(f"Service {name} not registered")
         return self.services[name]
+        
+    def has_service(self, name: str) -> bool:
+        """Check if a service is registered.
+        
+        Args:
+            name: Name of the service
+            
+        Returns:
+            True if service is registered, False otherwise
+        """
+        return name in self.services
     
     def get_agent_factory(self) -> AgentFactory:
         """Get or create agent factory.

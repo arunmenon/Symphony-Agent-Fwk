@@ -5,11 +5,13 @@ offering a clean, user-friendly API with fluent interfaces.
 """
 
 import os
-from typing import Dict, List, Any, Optional, Union
+import logging
+from typing import Dict, List, Any, Optional, Union, Type
 import asyncio
 
 from symphony.core.registry import ServiceRegistry
 from symphony.core.config import SymphonyConfig, ConfigLoader
+from symphony.core.plugin import Plugin, PluginManager
 from symphony.persistence.memory_repository import InMemoryRepository
 from symphony.persistence.file_repository import FileSystemRepository
 from symphony.core.task import Task
@@ -48,20 +50,31 @@ class Symphony:
         
         self.config = config
         self.registry = ServiceRegistry.get_instance()
+        self.logger = logging.getLogger("symphony")
         
         # Lazily initialized facades and builders
         self._agent_facade = None
         self._task_facade = None
         self._workflow_facade = None
         self._patterns_facade = None
+        self._plugin_manager = None
     
-    async def setup(self, persistence_type: str = "memory", base_dir: str = "./data", with_patterns: bool = True):
+    async def setup(
+        self, 
+        persistence_type: str = "memory", 
+        base_dir: str = "./data", 
+        with_patterns: bool = True,
+        with_plugins: bool = True,
+        plugin_directories: List[str] = None,
+    ):
         """Set up Symphony API with basic components.
         
         Args:
             persistence_type: Type of persistence ("memory" or "file")
             base_dir: Base directory for file storage (only used with "file" persistence)
             with_patterns: Whether to register patterns library (default: True)
+            with_plugins: Whether to discover and load plugins (default: True)
+            plugin_directories: Additional plugin directories to search
         """
         # Get persistence type from config if not provided
         if persistence_type is None:
@@ -102,6 +115,30 @@ class Symphony:
         if with_patterns:
             from symphony.patterns import register_patterns
             register_patterns(self.registry)
+        
+        # Set up plugin system if requested
+        if with_plugins:
+            # Make sure container and event bus are registered
+            if not self.registry.has_service("container"):
+                from symphony.core.container import Container
+                self.registry.register_service("container", Container())
+                
+            if not self.registry.has_service("event_bus"):
+                from symphony.core.events import EventBus
+                self.registry.register_service("event_bus", EventBus())
+            
+            # Register plugin system
+            from symphony.core.plugin import register_plugin_system
+            self._plugin_manager = register_plugin_system(self.registry)
+            
+            # Register additional plugin directories
+            if plugin_directories:
+                for directory in plugin_directories:
+                    self._plugin_manager.register_plugin_dir(directory)
+            
+            # Discover and load plugins
+            self._plugin_manager.discover_plugins()
+            self.logger.info("Plugin system initialized")
         
         return self
     
@@ -191,3 +228,69 @@ class Symphony:
             Service registry
         """
         return self.registry
+        
+    @property
+    def plugins(self) -> Optional[PluginManager]:
+        """Get plugin manager.
+        
+        Returns:
+            Plugin manager or None if plugins are not enabled
+        """
+        return self._plugin_manager
+        
+    def register_plugin(self, plugin: Plugin) -> None:
+        """Register a plugin with Symphony.
+        
+        Args:
+            plugin: Plugin instance to register
+            
+        Raises:
+            RuntimeError: If plugin system is not initialized
+        """
+        if self._plugin_manager is None:
+            raise RuntimeError("Plugin system not initialized. Call setup() with with_plugins=True first.")
+        
+        self._plugin_manager.register_plugin(plugin)
+        
+    def get_plugin(self, name: str) -> Optional[Plugin]:
+        """Get a plugin by name.
+        
+        Args:
+            name: Plugin name
+            
+        Returns:
+            Plugin instance or None if not found or plugin system not initialized
+        """
+        if self._plugin_manager is None:
+            return None
+            
+        return self._plugin_manager.get_plugin(name)
+        
+    def discover_plugins_in_package(self, package_name: str) -> None:
+        """Discover plugins in a Python package.
+        
+        Args:
+            package_name: Name of the package to search
+            
+        Raises:
+            RuntimeError: If plugin system is not initialized
+        """
+        if self._plugin_manager is None:
+            raise RuntimeError("Plugin system not initialized. Call setup() with with_plugins=True first.")
+            
+        self._plugin_manager.discover_plugins_in_package(package_name)
+        
+    def has_feature(self, feature_name: str) -> bool:
+        """Check if a particular optional feature is available.
+        
+        This method delegates to the feature detection utility in the top-level
+        Symphony module.
+        
+        Args:
+            feature_name: Name of the feature to check for
+            
+        Returns:
+            True if the feature is available, False otherwise
+        """
+        from symphony import has_feature
+        return has_feature(feature_name)
