@@ -318,9 +318,68 @@ important_info = await memory_manager.retrieve(key="task_reminder")
 
 ## Getting Started
 
-### Creating a Simple Agent
+### Creating Agents with the Builder Pattern
 
-Here's a complete example of creating a simple agent with a tool:
+Symphony provides a fluent builder pattern for creating agents with a clean, expressive API:
+
+```python
+import asyncio
+from symphony.builder.agent_builder import AgentBuilder
+from symphony.core.registry import ServiceRegistry
+
+async def main():
+    # Get the service registry
+    registry = ServiceRegistry.get_instance()
+    
+    # Build a simple agent with fluent API
+    weather_agent = (AgentBuilder(registry=registry)
+        .create(
+            name="WeatherAgent", 
+            role="Weather assistant", 
+            instruction_template="You are a helpful assistant that can check the weather."
+        )
+        .with_model("advanced-model")
+        .with_tools(["weather_api"])
+        .with_memory_type("conversation")
+        .build())
+    
+    # Use the agent
+    response = await weather_agent.run("What's the weather in New York?")
+    print(f"Agent: {response}")
+    
+    # Build a more sophisticated agent with additional capabilities
+    research_agent = (AgentBuilder(registry=registry)
+        .create(
+            name="ResearchAgent", 
+            role="Research assistant", 
+            instruction_template="You are a research assistant that can find and analyze information."
+        )
+        .with_model("advanced-model")
+        .with_capabilities(["web_search", "data_analysis", "summarization"])
+        .with_tools(["web_search", "document_analyzer", "citation_generator"])
+        # Configure memory with importance assessment
+        .with_memory_importance_strategy(
+            "hybrid",
+            rule_weight=0.6,
+            llm_weight=0.4,
+            action_keywords=["research", "important", "remember", "key finding"]
+        )
+        .with_memory_thresholds(long_term=0.6, kg=0.8)
+        .with_knowledge_graph(enabled=True)
+        .build())
+    
+    # Use the more advanced agent
+    research_query = "Research the latest advancements in renewable energy storage"
+    research_result = await research_agent.run(research_query)
+    print(f"Research result: {research_result}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### Creating Agents Manually
+
+For more fine-grained control, you can also create agents manually:
 
 ```python
 import asyncio
@@ -456,15 +515,60 @@ if __name__ == "__main__":
 
 ## Advanced Features
 
+### Creating Specialized Agent Types
+
+Symphony supports multiple agent architectures for different use cases:
+
+```python
+# Planning Agent - breaks down goals into steps
+planning_agent = (AgentBuilder(registry=registry)
+    .create(
+        name="PlanningAgent", 
+        role="Planning assistant", 
+        instruction_template="You are an agent that creates and executes plans."
+    )
+    .with_model("advanced-model")
+    .with_agent_type("planner")  # Specifically use a planning agent
+    .with_planning_strategy("goal_decomposition")
+    .with_tools(["search", "calculator", "code_executor"])
+    .build())
+
+# Reactive Agent - simpler stimulus-response model
+reactive_agent = (AgentBuilder(registry=registry)
+    .create(
+        name="ReactiveAgent", 
+        role="Reactive assistant", 
+        instruction_template="You respond directly to user questions."
+    )
+    .with_model("advanced-model")
+    .with_agent_type("reactive")
+    .with_tools(["calculator", "weather"])
+    .build())
+
+# Knowledge Graph Enhanced Agent - with structured knowledge
+kg_agent = (AgentBuilder(registry=registry)
+    .create(
+        name="KnowledgeAgent", 
+        role="Knowledge assistant", 
+        instruction_template="You are an assistant with structured knowledge."
+    )
+    .with_model("advanced-model")
+    .with_agent_type("kg_enhanced")
+    .with_knowledge_graph(enabled=True, extraction_threshold=0.75)
+    .with_tools(["search", "knowledge_query"])
+    .build())
+```
+
 ### Memory Importance Assessment
 
 Symphony's memory system can automatically assess the importance of information to determine what should be stored in long-term memory:
 
 ```python
-from symphony.memory.importance import RuleBasedStrategy
+from symphony.memory.importance import RuleBasedStrategy, LLMBasedStrategy, HybridStrategy
 from symphony.memory.memory_manager import ConversationMemoryManager
+from symphony.core.factory import MemoryFactory
 
-# Create a custom importance strategy
+# 1. Custom importance strategy through inheritance
 class CustomImportanceStrategy(RuleBasedStrategy):
     """Custom strategy for specialized importance assessment."""
     
@@ -485,6 +589,86 @@ class CustomImportanceStrategy(RuleBasedStrategy):
 memory = ConversationMemoryManager(
     importance_strategy=CustomImportanceStrategy(),
     memory_thresholds={"long_term": 0.6, "kg": 0.8}
+)
+
+# 2. Using factory pattern for pre-configured strategies
+financial_memory = MemoryFactory.create_conversation_manager(
+    importance_strategy_type="rule",
+    strategy_params={
+        "action_keywords": ["investment", "portfolio", "transaction", "deposit", "withdrawal"],
+        "question_bonus": 0.3,
+        "action_bonus": 0.4,
+        "base_importance": 0.5
+    },
+    memory_thresholds={"long_term": 0.6, "kg": 0.8}
+)
+
+# 3. Creating a hybrid importance strategy
+llm_client = LiteLLMClient(config=LiteLLMConfig(model="openai/gpt-4"))
+
+# Create component strategies
+rule_strategy = RuleBasedStrategy(
+    action_keywords=["important", "critical", "remember"],
+    base_importance=0.5
+)
+
+llm_strategy = LLMBasedStrategy(
+    llm_client=llm_client,
+    default_prompt="Evaluate the importance of this information on a scale of 0-10:\n{content}"
+)
+
+# Combine strategies with weighted importance
+hybrid_strategy = HybridStrategy([
+    (rule_strategy, 0.6),  # 60% weight for rule-based
+    (llm_strategy, 0.4)    # 40% weight for LLM-based
+])
+
+# Create memory with hybrid strategy
+hybrid_memory = ConversationMemoryManager(
+    importance_strategy=hybrid_strategy,
+    memory_thresholds={"long_term": 0.6, "kg": 0.8}
+)
+```
+
+### Configuring Different Memory Types
+
+Symphony supports multiple memory types for different needs:
+
+```python
+from symphony.memory.memory_manager import WorkingMemory, MemoryManager
+from symphony.memory.vector_memory import VectorMemory
+from symphony.memory.local_kg_memory import LocalKnowledgeGraphMemory
+
+# 1. Create working memory with custom retention
+working_memory = WorkingMemory(
+    retention_period=3600  # 1 hour retention for short-term memory
+)
+
+# 2. Create vector memory with custom embedder
+from symphony.memory.vector_memory import SimpleEmbedder
+vector_memory = VectorMemory(
+    embedder=SimpleEmbedder(dimension=384),
+    persist_path="./persistent_memory.pkl"  # Save to disk
+)
+
+# 3. Create knowledge graph memory
+kg_memory = LocalKnowledgeGraphMemory(
+    llm_client=llm_client,
+    embedding_model=SimpleEmbeddingModel(dimension=384),
+    storage_path="./knowledge_graph.pkl",
+    auto_extract=True  # Automatically extract knowledge triplets
+)
+
+# 4. Create complete memory manager with all components
+memory_manager = MemoryManager(
+    working_memory=working_memory, 
+    long_term_memory=vector_memory,
+    kg_memory=kg_memory,
+    importance_strategy=hybrid_strategy,
+    memory_thresholds={
+        "long_term": 0.6,  # Store in vector memory if importance > 0.6
+        "kg": 0.8          # Store in knowledge graph if importance > 0.8
+    }
 )
 ```
 
