@@ -136,13 +136,38 @@ Symphony provides first-class integration with the Model Context Protocol (MCP),
 - **Dynamic Context Assembly**: Assemble resources as needed during agent execution
 - **Resource URI Scheme**: Access resources with a consistent URI pattern
 
+#### How MCP Integration Works
+
+```
+┌─────────────┐      1. Request      ┌──────────────┐ 
+│    Agent    │──────────────────────▶              │ 
+│             │                      │  MCP Server  │
+│             │◀─────────────────────│              │
+└─────────────┘    4. Response       └──────┬───────┘
+                                          2.│URI Resolution
+                                            ▼
+┌──────────────────────┐    3. Function Call  ┌─────────────────┐
+│ Application Resource │◀────────────────────▶│Resource Function│
+│  Registry            │                      │  Handler        │
+└──────────────────────┘                      └─────────────────┘
+```
+
+When an agent uses a resource URI like `symphony://knowledge-base/weather`:
+1. The MCP server receives the request
+2. Maps the URI to the registered handler function 
+3. Executes the function with the extracted parameters
+4. Returns the response to the agent
+
+#### MCP Implementation Example
+
 ```python
 from symphony.agents.base import AgentConfig, ReactiveAgent
-from symphony.llm.base import MockLLMClient
+from symphony.llm.litellm_client import LiteLLMClient, LiteLLMConfig  # For production use
 from symphony.mcp.base import MCPManager, MCPConfig
 from mcp.server.fastmcp import Context  # Import Context from MCP
 from symphony.prompts.registry import PromptRegistry
 from symphony.tools.base import tool
+import os
 
 # Define a tool that will be exposed via MCP
 @tool(name="web_search", description="Search the web for information")
@@ -176,6 +201,28 @@ mcp_manager = MCPManager(config=mcp_config)
 # Set up resources
 setup_custom_mcp_resources(mcp_manager)
 
+# Create prompt registry with MCP-aware prompts
+registry = PromptRegistry()
+registry.register_prompt(
+    prompt_type="system",
+    content=(
+        "You are an MCP-enabled assistant. You can access information using URIs like:\n"
+        "- symphony://knowledge-base/weather\n"
+        "- symphony://knowledge-base/population\n"
+        "When asked about weather or populations, use these resources."
+    ),
+    agent_type="MCPAgent"
+)
+
+# In examples we use MockLLMClient for simplicity and predictability
+# In production, use a real LLM client:
+llm_client = LiteLLMClient(
+    config=LiteLLMConfig(
+        model="openai/gpt-4",  # Provider/model format
+        api_key=os.environ.get("OPENAI_API_KEY")
+    )
+)
+
 # Create agent config with MCP enabled
 agent_config = AgentConfig(
     name="MCPAgent",
@@ -188,13 +235,52 @@ agent_config = AgentConfig(
 # Create agent with MCP manager
 agent = ReactiveAgent(
     config=agent_config,
-    llm_client=MockLLMClient(),
-    prompt_registry=PromptRegistry(),
+    llm_client=llm_client,
+    prompt_registry=registry,
     mcp_manager=mcp_manager
 )
 
-# The agent can now access MCP resources and tools
-# For example: symphony://knowledge-base/weather
+# Usage example
+async def use_mcp_agent():
+    response = await agent.run("What is the current weather?")
+    print(f"Agent: {response}")
+    # The agent will access symphony://knowledge-base/weather
+    # and use the web_search tool
+```
+
+#### Externalized Prompt Management
+
+Symphony's PromptRegistry provides centralized prompt management for your agent system:
+
+```python
+# Create a centralized registry for all prompts
+registry = PromptRegistry()
+
+# Register prompts by type, role and optional key
+registry.register_prompt(
+    prompt_type="system",
+    content="You are a helpful assistant specialized in {domain}.",
+    prompt_key="base_system_prompt"  # Optional key for reference
+)
+
+registry.register_prompt(
+    prompt_type="user",
+    content="Answer this {domain} question: {query}",
+    prompt_key="domain_question"
+)
+
+# Templating with parameters
+formatted_prompt = registry.get_prompt(
+    "domain_question", 
+    {"domain": "physics", "query": "Explain quantum entanglement"}
+)
+
+# Hierarchical overrides for specialized agent types
+registry.register_prompt(
+    prompt_type="system",
+    content="You are a physics expert specializing in quantum mechanics.",
+    agent_type="PhysicsAgent"  # Only applies to this agent type
+)
 ```
 
 ### Memory
@@ -447,6 +533,15 @@ Symphony's patterns library provides reusable interaction patterns that improve 
 #### Core Pattern Categories
 
 1. **Reasoning Patterns**
+
+   ```
+   Chain-of-Thought Pattern Flow:
+   ┌─────────┐    ┌─────────────┐    ┌────────────┐    ┌────────────┐
+   │ Problem │───▶│ Break down  │───▶│ Step-by-   │───▶│ Synthesize │
+   │ Input   │    │ into steps  │    │ step solve │    │ final ans. │
+   └─────────┘    └─────────────┘    └────────────┘    └────────────┘
+   ```
+
    ```python
    # Chain-of-Thought pattern for step-by-step reasoning
    result = await symphony.patterns.apply_reasoning_pattern(
@@ -468,6 +563,21 @@ Symphony's patterns library provides reusable interaction patterns that improve 
    ```
 
 2. **Verification Patterns**
+
+   ```
+   Self-Consistency Pattern Flow:
+   ┌─────────┐    ┌─────────────┐    ┌────────────┐    ┌────────────┐
+   │ Problem │───▶│ Generate N  │───▶│ Compare    │───▶│ Select     │
+   │ Input   │    │ solutions   │    │ solutions  │    │ consensus  │
+   └─────────┘    └─────────────┘    └────────────┘    └────────────┘
+   
+   Critic Review Pattern Flow:
+   ┌─────────┐    ┌─────────────┐    ┌────────────┐    ┌────────────┐
+   │ Problem │───▶│ Generate    │───▶│ Critic     │───▶│ Revise     │
+   │ Input   │    │ solution    │    │ evaluation │    │ solution   │
+   └─────────┘    └─────────────┘    └────────────┘    └────────────┘
+   ```
+
    ```python
    # Self-Consistency pattern generates multiple solutions and finds consensus
    result = await symphony.patterns.apply_verification_pattern(
@@ -493,6 +603,15 @@ Symphony's patterns library provides reusable interaction patterns that improve 
    ```
 
 3. **Multi-Agent Patterns**
+
+   ```
+   Expert Panel Pattern Flow:
+   ┌─────────┐    ┌─────────────┐    ┌────────────────────┐    ┌──────────┐
+   │ Problem │───▶│ Distribute  │───▶│ Expert responses   │───▶│ Moderator│
+   │ Input   │    │ to experts  │    │ (parallel process) │    │ synthesis│
+   └─────────┘    └─────────────┘    └────────────────────┘    └──────────┘
+   ```
+
    ```python
    # Expert Panel pattern gathers perspectives from domain experts
    result = await symphony.patterns.apply_multi_agent_pattern(
@@ -511,6 +630,16 @@ Symphony's patterns library provides reusable interaction patterns that improve 
 #### Pattern Composition
 
 Patterns can be composed to create more sophisticated behaviors:
+
+```
+Pattern Composition Flow:
+┌────────────┐     ┌────────────┐     ┌────────────┐     ┌────────────┐
+│            │     │            │     │            │     │            │
+│ Chain of   │────▶│ Reflection │────▶│   Self-    │────▶│ Integrated │
+│ Thought    │     │ Pattern    │     │ Consistency│     │   Result   │
+│            │     │            │     │            │     │            │
+└────────────┘     └────────────┘     └────────────┘     └────────────┘
+```
 
 ```python
 import asyncio
@@ -563,6 +692,40 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+#### Pattern Implementation Details
+
+Patterns are implemented as reusable templates with configurable components:
+
+1. **Pattern Definition**: Each pattern is defined in YAML templates that specify the interaction flow
+2. **Dynamic Prompting**: Templates include specialized prompts for each agent role
+3. **Execution Logic**: Pattern-specific logic handles the flow between components
+4. **Result Processing**: Results are processed and formatted in a consistent way
+
+For example, the Chain-of-Thought pattern template uses a structure like:
+
+```yaml
+name: chain_of_thought
+description: Step-by-step reasoning for complex problems
+version: 1.0
+prompts:
+  system:
+    reasoner: |
+      You are an expert at solving complex problems through step-by-step reasoning.
+      Break down the problem, solve each step, and provide a final answer.
+  
+  user:
+    reasoner: |
+      Problem: {query}
+      
+      Solve this step-by-step:
+      1. Break the problem into parts
+      2. Solve each part carefully
+      3. Combine the results
+      4. Provide your final answer
+```
+
+The framework handles the execution logic, making it easy to use patterns without reimplementing the underlying mechanics.
 
 ## Integration Options
 
