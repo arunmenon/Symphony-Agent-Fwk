@@ -602,7 +602,9 @@ Symphony's patterns library provides reusable interaction patterns that improve 
    )
    ```
 
-3. **Multi-Agent Patterns**
+3. **Multi-Agent & Collaboration Patterns**
+
+   Symphony provides several patterns for agent collaboration, enabling more complex problem-solving through coordinated multi-agent workflows:
 
    ```
    Expert Panel Pattern Flow:
@@ -610,6 +612,12 @@ Symphony's patterns library provides reusable interaction patterns that improve 
    │ Problem │───▶│ Distribute  │───▶│ Expert responses   │───▶│ Moderator│
    │ Input   │    │ to experts  │    │ (parallel process) │    │ synthesis│
    └─────────┘    └─────────────┘    └────────────────────┘    └──────────┘
+   
+   Debate Pattern Flow:
+   ┌─────────┐    ┌─────────────┐    ┌───────────┐    ┌───────────┐    ┌─────────┐
+   │ Problem │───▶│ Initial     │───▶│ Counter-  │───▶│ Rebuttals │───▶│ Judge   │
+   │ Input   │    │ positions   │    │ arguments │    │ & replies │    │ verdict │
+   └─────────┘    └─────────────┘    └───────────┘    └───────────┘    └─────────┘
    ```
 
    ```python
@@ -625,6 +633,91 @@ Symphony's patterns library provides reusable interaction patterns that improve 
            "rounds": 2
        }
    )
+   
+   # Collaborative Problem-Solving pattern with specialized agent roles
+   result = await symphony.patterns.apply_multi_agent_pattern(
+       "collaborative_solving",
+       "Design a scalable architecture for a high-traffic e-commerce site",
+       config={
+           "agent_roles": {
+               "coordinator": coordinator_id,
+               "specialists": {
+                   "database_expert": db_expert_id,
+                   "frontend_expert": frontend_expert_id,
+                   "security_expert": security_expert_id,
+                   "devops_expert": devops_expert_id
+               }
+           },
+           "collaboration_type": "iterative"  # Options: parallel, sequential, iterative
+       }
+   )
+   
+   # Debate pattern for analyzing controversial topics
+   result = await symphony.patterns.apply_multi_agent_pattern(
+       "debate",
+       "Is nuclear energy a good solution for climate change?",
+       config={
+           "agent_roles": {
+               "moderator": moderator_id,
+               "pro_position": proponent_id,
+               "con_position": opponent_id,
+               "judge": judge_id
+           },
+           "debate_format": "structured",  # Options: structured, free-form
+           "rounds": 3
+       }
+   )
+   ```
+   
+   #### Agent Orchestration
+
+   For complex workflows, Symphony provides advanced orchestration capabilities:
+
+   ```python
+   from symphony.orchestration.engine import OrchestrationEngine
+   from symphony.orchestration.workflow_definition import WorkflowDefinition
+   
+   # Define a workflow with multiple agent interactions
+   workflow = WorkflowDefinition(
+       name="research_workflow",
+       description="Research workflow with data gathering, analysis, and summary"
+   )
+   
+   # Add steps to the workflow
+   workflow.add_step(
+       "data_gathering",
+       agent_id=researcher_id,
+       inputs={"query": "{topic}"},
+       outputs=["research_data"]
+   )
+   
+   workflow.add_step(
+       "data_analysis",
+       agent_id=analyst_id,
+       inputs={"data": "{research_data}"},
+       outputs=["analysis_results"]
+   )
+   
+   workflow.add_step(
+       "summary_generation",
+       agent_id=writer_id,
+       inputs={"analysis": "{analysis_results}", "audience": "{audience_type}"},
+       outputs=["final_summary"]
+   )
+   
+   # Create execution engine
+   engine = OrchestrationEngine()
+   
+   # Execute workflow with specific inputs
+   result = await engine.execute_workflow(
+       workflow,
+       {
+           "topic": "Renewable energy developments in 2025",
+           "audience_type": "technical"
+       }
+   )
+   
+   print(f"Final summary: {result['final_summary']}")
    ```
 
 #### Pattern Composition
