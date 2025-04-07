@@ -41,7 +41,7 @@ pip install -e ".[dev,openai,anthropic,cli]"
 
 ## Core Concepts
 
-Symphony is built around a few key concepts that form the foundation of the framework:
+Symphony is built around several key concepts that form the foundation of the framework:
 
 ### Agents
 
@@ -124,6 +124,77 @@ agent_config = AgentConfig(
     description="An agent that can perform calculations",
     tools=["calculator"]  # Reference the tool by name
 )
+```
+
+### Model Context Protocol (MCP)
+
+Symphony provides first-class integration with the Model Context Protocol (MCP), which offers standardized context management and a unified way for agents to access resources and tools.
+
+**Key Benefits:**
+- **Structured Context Access**: MCP provides a structured way to access resources and tools
+- **Consistent API**: Standardized interface across different LLM providers
+- **Dynamic Context Assembly**: Assemble resources as needed during agent execution
+- **Resource URI Scheme**: Access resources with a consistent URI pattern
+
+```python
+from symphony.agents.base import AgentConfig, ReactiveAgent
+from symphony.llm.base import MockLLMClient
+from symphony.mcp.base import MCPManager, MCPConfig
+from mcp.server.fastmcp import Context  # Import Context from MCP
+from symphony.prompts.registry import PromptRegistry
+from symphony.tools.base import tool
+
+# Define a tool that will be exposed via MCP
+@tool(name="web_search", description="Search the web for information")
+def web_search(query: str) -> str:
+    """Simulate a web search with mock results."""
+    if "weather" in query.lower():
+        return "It's currently sunny and 75°F."
+    else:
+        return f"No specific information found for: {query}"
+
+# Define custom MCP resources
+def setup_custom_mcp_resources(mcp_manager: MCPManager) -> None:
+    """Set up custom MCP resources."""
+    
+    @mcp_manager.mcp.resource("symphony://knowledge-base/{topic}")
+    def get_knowledge(topic: str, ctx: Context) -> str:
+        """Example knowledge base resource."""
+        knowledge = {
+            "weather": "Weather is the state of the atmosphere...",
+            "population": "Population refers to the number of people..."
+        }
+        return knowledge.get(topic, f"No information about {topic}")
+
+# Initialize MCP Manager
+mcp_config = MCPConfig(
+    app_name="Symphony MCP Example",
+    resource_prefix="symphony"
+)
+mcp_manager = MCPManager(config=mcp_config)
+
+# Set up resources
+setup_custom_mcp_resources(mcp_manager)
+
+# Create agent config with MCP enabled
+agent_config = AgentConfig(
+    name="MCPAgent",
+    agent_type="MCPAgent", 
+    description="An agent that uses MCP for context and tools",
+    tools=["web_search"],
+    mcp_enabled=True  # Explicitly enable MCP integration
+)
+
+# Create agent with MCP manager
+agent = ReactiveAgent(
+    config=agent_config,
+    llm_client=MockLLMClient(),
+    prompt_registry=PromptRegistry(),
+    mcp_manager=mcp_manager
+)
+
+# The agent can now access MCP resources and tools
+# For example: symphony://knowledge-base/weather
 ```
 
 ### Memory
@@ -363,7 +434,83 @@ agent = (AgentBuilder(registry=registry)
 
 ### Patterns Library
 
-Symphony's patterns library provides reusable interaction patterns for common agent behaviors:
+Symphony's patterns library provides reusable interaction patterns that improve agent performance for common tasks. Rather than reimplementing these patterns for each application, you can leverage Symphony's pre-built collection.
+
+#### Why Use Patterns?
+
+- **Improved Reasoning**: Patterns like Chain-of-Thought dramatically enhance problem-solving
+- **Quality Control**: Verification patterns like Self-Consistency reduce errors
+- **Collaboration**: Multi-agent patterns enable expert coordination
+- **Reusability**: Standardized implementations save development time
+- **Composability**: Combine patterns for more sophisticated behaviors
+
+#### Core Pattern Categories
+
+1. **Reasoning Patterns**
+   ```python
+   # Chain-of-Thought pattern for step-by-step reasoning
+   result = await symphony.patterns.apply_reasoning_pattern(
+       "chain_of_thought",
+       "If a triangle has sides of length 3, 4, and 5, what is its area?",
+       config={"agent_roles": {"reasoner": agent_id}}
+   )
+   
+   # Steps are captured in the result
+   for i, step in enumerate(result.get("steps", [])):
+       print(f"Step {i+1}: {step}")
+   
+   # Step-Back pattern for taking a broader perspective
+   result = await symphony.patterns.apply_reasoning_pattern(
+       "step_back",
+       "How could we reduce carbon emissions globally?",
+       config={"agent_roles": {"reasoner": agent_id}}
+   )
+   ```
+
+2. **Verification Patterns**
+   ```python
+   # Self-Consistency pattern generates multiple solutions and finds consensus
+   result = await symphony.patterns.apply_verification_pattern(
+       "self_consistency",
+       "Calculate the derivative of f(x) = x³ + 2x² - 5x + 3",
+       config={
+           "agent_roles": {"solver": agent_id},
+           "solution_count": 3
+       }
+   )
+   
+   # Critic Review pattern evaluates solutions
+   result = await symphony.patterns.apply_verification_pattern(
+       "critic_review",
+       "Propose a marketing strategy for a new smartphone",
+       config={
+           "agent_roles": {
+               "proposer": agent_id,
+               "critic": critic_agent_id
+           }
+       }
+   )
+   ```
+
+3. **Multi-Agent Patterns**
+   ```python
+   # Expert Panel pattern gathers perspectives from domain experts
+   result = await symphony.patterns.apply_multi_agent_pattern(
+       "expert_panel",
+       "How might climate change affect agriculture?",
+       config={
+           "agent_roles": {
+               "moderator": moderator_id,
+               "experts": [climate_expert_id, agriculture_expert_id, economics_expert_id]
+           },
+           "rounds": 2
+       }
+   )
+   ```
+
+#### Pattern Composition
+
+Patterns can be composed to create more sophisticated behaviors:
 
 ```python
 import asyncio
@@ -382,22 +529,7 @@ async def main():
     )
     agent_id = await symphony.agents.create_agent(agent_config)
     
-    # Use chain-of-thought reasoning pattern
-    result = await symphony.patterns.apply_reasoning_pattern(
-        "chain_of_thought",
-        "If a triangle has sides of length 3, 4, and 5, what is its area?",
-        config={"agent_roles": {"reasoner": agent_id}}
-    )
-    
-    # Display reasoning steps
-    print("Reasoning steps:")
-    for i, step in enumerate(result.get("steps", [])):
-        print(f"Step {i+1}: {step}")
-    
-    # Display final answer
-    print(f"Final answer: {result.get('response')}")
-    
-    # Compose patterns for more complex behaviors
+    # Create individual patterns
     cot_pattern = symphony.patterns.create_pattern(
         "chain_of_thought",
         {"agent_roles": {"reasoner": agent_id}}
@@ -408,14 +540,25 @@ async def main():
         {"agent_roles": {"performer": agent_id, "reflector": agent_id}}
     )
     
-    # Compose sequentially
+    verification_pattern = symphony.patterns.create_pattern(
+        "self_consistency",
+        {"agent_roles": {"solver": agent_id}, "solution_count": 3}
+    )
+    
+    # Compose sequentially for a comprehensive reasoning workflow
     composed_pattern = symphony.patterns.compose_sequential(
-        [cot_pattern, reflection_pattern],
-        name="reason_then_reflect"
+        [cot_pattern, reflection_pattern, verification_pattern],
+        name="reason_reflect_verify"
     )
     
     # Execute the composed pattern
-    result = await composed_pattern.run({"query": "Explain quantum computing"})
+    result = await composed_pattern.run({
+        "query": "Explain quantum computing and its applications"
+    })
+    
+    # The result contains all steps from each pattern
+    print(f"Final result: {result.get('final_response')}")
+    print(f"Certainty score: {result.get('certainty_score')}")
 
 if __name__ == "__main__":
     asyncio.run(main())
