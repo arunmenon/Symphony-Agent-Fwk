@@ -1110,6 +1110,7 @@ The `examples/` directory contains complete examples demonstrating different asp
 - `planning_agent.py` - Planning-based agent with goal decomposition
 - `comprehensive_tutorial.py` - End-to-end tutorial
 - `persistence_example.py` - Data persistence across sessions
+- `taxonomy_planner_example.py` - Complete application for generating hierarchical taxonomies
 
 ## Testing
 
