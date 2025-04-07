@@ -138,8 +138,9 @@ def _check_module(module_name: str) -> bool:
         return False
 
 
-# Import main entry point
-from symphony.api import Symphony
+# Import main entry points
+from symphony.api import Symphony as CoreSymphony
+from symphony.simple_api import Symphony as SimpleSymphony
 
 # Core models
 from symphony.core.task import Task, TaskStatus, TaskPriority
@@ -159,6 +160,8 @@ from symphony.builder.task_builder import TaskBuilder
 from symphony.builder.workflow_builder import WorkflowBuilder
 from symphony.patterns.builder import PatternBuilder
 
+# Use simplified API by default to minimize cognitive load
+Symphony = SimpleSymphony
 
 # Add sentinel file to mark installed package
 import os
