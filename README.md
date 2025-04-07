@@ -9,7 +9,7 @@ Symphony is an advanced, modular framework for building complex AI agent systems
 - **Patterns Library**: Reusable interaction patterns like chain-of-thought, reflection, and multi-agent collaboration.
 - **MCP Integration**: First-class support for the Model Context Protocol, providing standardized context management.
 - **LiteLLM Integration**: Seamless integration with over 100+ LLM providers through a unified interface.
-- **Advanced Memory Architecture**: Multi-tier memory system with working and long-term memory, automatic importance assessment and memory consolidation.
+- **Advanced Memory Architecture**: Multi-tier memory system with configurable importance assessment, custom storage policies, and automatic memory consolidation.
 - **Prompt Management System**: Centralized registry for prompts with version control and hierarchical overrides.
 - **Modular Plugin Architecture**: Extend with custom tools, memory implementations, LLM backends, and more.
 - **Type-Safe Interactions**: Built on Pydantic models for robust data validation.
@@ -155,12 +155,12 @@ Symphony provides a sophisticated memory architecture with domain awareness:
 - **Long-Term Memory**: Persistent storage with semantic search capabilities
 - **Knowledge Graph Memory**: Structured relationship storage for complex knowledge
 
-#### Domain-Specific Memory Strategies
-- **Strategy Pattern**: Pluggable importance assessment strategies for different domains
-- **Domain-Specific Strategies**: Specialized for customer support, education, medical, personal assistant, and product research domains
+#### Configurable Importance Assessment
+- **Strategy Pattern**: Pluggable importance assessment strategies for flexible memory handling
+- **Customizable Rules**: Define what information matters for your specific use case
 - **Rule-Based Assessment**: Keyword and pattern matching for fast evaluation
-- **LLM-Based Assessment**: Advanced semantic understanding of information importance
-- **Hybrid Strategies**: Combining domain rules with ML-based assessment
+- **LLM-Based Assessment**: Semantic understanding of information importance
+- **Hybrid Strategies**: Combine rule-based approaches with AI-based assessment
 
 #### Memory Operations
 - **Importance Assessment**: Automatic evaluation of information importance
@@ -172,24 +172,28 @@ Symphony provides a sophisticated memory architecture with domain awareness:
 # Basic usage with default importance assessment
 memory_manager = ConversationMemoryManager()
 
-# Domain-specific memory with specialized strategy
+# Custom memory with configurable importance assessment
 from symphony.memory.strategy_factory import ImportanceStrategyFactory
 
-# Create customer support memory with domain-specific strategy
-customer_memory = MemoryFactory.create_conversation_manager(
-    importance_strategy_type="customer_support",
-    strategy_params={"action_keywords": ["order", "refund", "urgent"]},
+# Create memory with rule-based importance strategy
+memory = MemoryFactory.create_conversation_manager(
+    importance_strategy_type="rule",
+    strategy_params={
+        "action_keywords": ["important", "critical", "remember"],
+        "question_bonus": 0.3,
+        "action_bonus": 0.4
+    },
     memory_thresholds={"long_term": 0.6, "kg": 0.8}
 )
 
 # Add messages to memory (importance calculated automatically)
-await customer_memory.add_message(Message(
+await memory.add_message(Message(
     role="user",
-    content="My order #12345 hasn't been delivered and it's urgent!"
+    content="Please remember this important information for later."
 ))
 
 # Search conversation using semantic memory
-results = await customer_memory.search_conversation("order problem")
+results = await memory.search_conversation("important information")
 ```
 
 ### Tools
@@ -223,9 +227,8 @@ The `examples/` directory contains complete examples demonstrating different asp
 ### Memory Examples
 - `memory_manager_example.py` - Using the advanced memory architecture
 - `strategic_memory_example.py` - Demonstrates importance-based memory strategies
-- `domain_strategies_example.py` - Domain-specific memory importance strategies
-- `domain_memory_agent_example.py` - Building agents with domain-specialized memory
 - `memory_factory_example.py` - Factory patterns for memory system creation
+- `importance_assessment_example.py` - Customizable importance evaluation approaches
 - `vector_memory.py` - Semantic memory storage and retrieval
 - `knowledge_graph_memory.py` - Graph-based memory for relationship storage
 - `local_kg_memory.py` - Local knowledge graph without external dependencies
