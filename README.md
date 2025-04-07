@@ -9,6 +9,7 @@ Symphony is an advanced, modular framework for building complex AI agent systems
 - **Patterns Library**: Reusable interaction patterns like chain-of-thought, reflection, and multi-agent collaboration.
 - **MCP Integration**: First-class support for the Model Context Protocol, providing standardized context management.
 - **LiteLLM Integration**: Seamless integration with over 100+ LLM providers through a unified interface.
+- **Advanced Memory Architecture**: Multi-tier memory system with working and long-term memory, automatic importance assessment and memory consolidation.
 - **Prompt Management System**: Centralized registry for prompts with version control and hierarchical overrides.
 - **Modular Plugin Architecture**: Extend with custom tools, memory implementations, LLM backends, and more.
 - **Type-Safe Interactions**: Built on Pydantic models for robust data validation.
@@ -144,6 +145,31 @@ Agents are the primary actors in Symphony. Each agent has:
 - A specific architecture (reactive, planning, etc.)
 - Optional MCP integration
 
+### Memory Architecture
+
+Symphony provides a sophisticated memory architecture:
+- **Memory Manager**: Central coordinator for different memory systems
+- **Working Memory**: Short-term storage with automatic expiration for current context
+- **Long-Term Memory**: Persistent storage with semantic search capabilities
+- **Importance Assessment**: Automatic evaluation of information importance
+- **Memory Consolidation**: Transfer of important information from working to long-term memory
+- **Conversation Memory**: Specialized memory for managing and searching conversation history
+
+```python
+# Create a memory manager
+memory_manager = ConversationMemoryManager()
+
+# Store information with different importance levels
+await memory_manager.store(
+    key="important_fact", 
+    value="The project deadline is Friday",
+    importance=0.9  # High importance - will go to long-term memory
+)
+
+# Search conversation history
+results = await memory_manager.search_conversation("deadline")
+```
+
 ### Tools
 
 Tools extend agent capabilities beyond text generation, allowing them to interact with external systems, process data, or perform specific actions.
@@ -164,6 +190,8 @@ The `examples/` directory contains complete examples demonstrating different asp
 - `tool_usage_patterns_example.py` - Examples of tool usage patterns
 - `learning_patterns_example.py` - Examples of learning patterns
 - `multi_agent.py` - Coordinating multiple agents
+- `memory_manager_example.py` - Using the advanced memory architecture
+- `vector_memory.py` - Semantic memory storage and retrieval
 - `dag_workflow.py` - Complex workflow using a directed acyclic graph
 
 ## Testing
