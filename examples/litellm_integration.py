@@ -50,7 +50,7 @@ Always show your work so the user can follow your reasoning.
     
     # Create LiteLLM configurations for different providers
     openai_config = LiteLLMConfig(
-        model="openai/gpt-3.5-turbo",  # Note: replace with your model of choice
+        model="openai/gpt-4",  # Use an advanced model for best results
         max_tokens=500,
         temperature=0.7,
         # Add your API key here or use environment variables
@@ -58,7 +58,7 @@ Always show your work so the user can follow your reasoning.
     )
     
     anthropic_config = LiteLLMConfig(
-        model="anthropic/claude-3-haiku",  # Note: replace with your model of choice
+        model="anthropic/claude-3-opus",  # Use an advanced model for best results
         max_tokens=500,
         temperature=0.7,
         # Add your API key here or use environment variables
