@@ -3,10 +3,14 @@
 This module provides a fluent interface for building Symphony agents.
 """
 
-from typing import Dict, List, Any, Optional, Set
+from typing import Dict, List, Any, Optional, Set, Union
 import asyncio
 from symphony.core.registry import ServiceRegistry
 from symphony.core.agent_config import AgentConfig, AgentCapabilities
+from symphony.memory.importance import ImportanceStrategy, RuleBasedStrategy
+from symphony.memory.memory_manager import MemoryManager, ConversationMemoryManager, WorkingMemory
+from symphony.memory.vector_memory import VectorMemory
+from symphony.memory.local_kg_memory import LocalKnowledgeGraphMemory
 
 class AgentBuilder:
     """Builder for Symphony agents.
@@ -26,6 +30,13 @@ class AgentBuilder:
         self.capabilities_list: List[str] = []
         self.model_name: Optional[str] = None
         self.metadata_dict: Dict[str, Any] = {}
+        
+        # Memory configuration
+        self.memory_manager: Optional[MemoryManager] = None
+        self.memory_type: str = "conversation"  # Default memory type
+        self.importance_strategy: Optional[ImportanceStrategy] = None
+        self.memory_thresholds: Dict[str, float] = {}
+        self.use_kg_memory: bool = False
         
     def create(self, name: str, role: str, instruction_template: str) -> 'AgentBuilder':
         """Create a new agent configuration.
@@ -120,6 +131,125 @@ class AgentBuilder:
         
         return self
     
+    def with_memory_type(self, memory_type: str) -> 'AgentBuilder':
+        """Set the type of memory system to use.
+        
+        Args:
+            memory_type: Type of memory ("basic", "conversation", "custom")
+            
+        Returns:
+            Self for chaining
+        """
+        self.memory_type = memory_type
+        return self
+        
+    def with_memory_importance_strategy(self, strategy_type: str, **kwargs) -> 'AgentBuilder':
+        """Set the importance calculation strategy for memory.
+        
+        Args:
+            strategy_type: Type of strategy ("rule", "llm", "hybrid")
+            **kwargs: Additional parameters for the strategy
+            
+        Returns:
+            Self for chaining
+        """
+        if strategy_type == "rule":
+            self.importance_strategy = RuleBasedStrategy(**kwargs)
+        elif strategy_type == "llm":
+            if "llm_client" not in kwargs:
+                raise ValueError("LLM client must be provided for LLM-based strategy")
+            from symphony.memory.importance import LLMBasedStrategy
+            self.importance_strategy = LLMBasedStrategy(**kwargs)
+        elif strategy_type == "hybrid":
+            if "strategies" not in kwargs:
+                raise ValueError("Strategies must be provided for hybrid strategy")
+            from symphony.memory.importance import HybridStrategy
+            self.importance_strategy = HybridStrategy(**kwargs)
+        else:
+            raise ValueError(f"Unknown strategy type: {strategy_type}")
+            
+        return self
+        
+    def with_memory_thresholds(self, long_term: float = 0.7, kg: float = 0.8) -> 'AgentBuilder':
+        """Set the memory importance thresholds.
+        
+        Args:
+            long_term: Threshold for long-term memory storage (0.0-1.0)
+            kg: Threshold for knowledge graph storage (0.0-1.0)
+            
+        Returns:
+            Self for chaining
+        """
+        self.memory_thresholds = {"long_term": long_term, "kg": kg}
+        return self
+        
+    def with_knowledge_graph(self, enabled: bool = True) -> 'AgentBuilder':
+        """Enable or disable knowledge graph memory.
+        
+        Args:
+            enabled: Whether to use knowledge graph memory
+            
+        Returns:
+            Self for chaining
+        """
+        self.use_kg_memory = enabled
+        return self
+        
+    def with_custom_memory(self, memory_manager: MemoryManager) -> 'AgentBuilder':
+        """Set a custom memory manager.
+        
+        Args:
+            memory_manager: Custom memory manager instance
+            
+        Returns:
+            Self for chaining
+        """
+        self.memory_manager = memory_manager
+        return self
+        
+    def _create_memory_manager(self, llm_client=None) -> MemoryManager:
+        """Create a memory manager based on configuration.
+        
+        Args:
+            llm_client: Optional LLM client for KG memory
+            
+        Returns:
+            Configured memory manager
+        """
+        # Use custom memory manager if provided
+        if self.memory_manager:
+            return self.memory_manager
+            
+        # Create base memory components
+        working_memory = WorkingMemory()
+        long_term_memory = VectorMemory()
+        
+        # Create knowledge graph memory if enabled
+        kg_memory = None
+        if self.use_kg_memory and llm_client:
+            kg_memory = LocalKnowledgeGraphMemory(
+                llm_client=llm_client,
+                auto_extract=True
+            )
+            
+        # Create appropriate memory manager type
+        if self.memory_type == "conversation":
+            return ConversationMemoryManager(
+                working_memory=working_memory,
+                long_term_memory=long_term_memory,
+                kg_memory=kg_memory,
+                importance_strategy=self.importance_strategy,
+                memory_thresholds=self.memory_thresholds
+            )
+        else:
+            return MemoryManager(
+                working_memory=working_memory,
+                long_term_memory=long_term_memory,
+                kg_memory=kg_memory,
+                importance_strategy=self.importance_strategy,
+                memory_thresholds=self.memory_thresholds
+            )
+    
     def build(self) -> AgentConfig:
         """Build the agent configuration.
         
@@ -133,6 +263,12 @@ class AgentBuilder:
         self.agent_config.capabilities.expertise = self.capabilities_list
         self.agent_config.model = self.model_name
         self.agent_config.metadata = self.metadata_dict
+        
+        # Add memory configuration to metadata
+        self.agent_config.metadata["memory_type"] = self.memory_type
+        self.agent_config.metadata["use_kg_memory"] = self.use_kg_memory
+        if self.memory_thresholds:
+            self.agent_config.metadata["memory_thresholds"] = self.memory_thresholds
         
         return self.agent_config
     

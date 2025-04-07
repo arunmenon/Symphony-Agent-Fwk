@@ -5,6 +5,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from symphony.memory.base import BaseMemory, InMemoryMemory
+from symphony.memory.importance import ImportanceStrategy, RuleBasedStrategy, default_strategy
 from symphony.memory.kg_memory import KnowledgeGraphMemory
 from symphony.memory.local_kg_memory import LocalKnowledgeGraphMemory
 from symphony.memory.vector_memory import VectorMemory
@@ -69,7 +70,9 @@ class MemoryManager:
         self,
         working_memory: Optional[WorkingMemory] = None,
         long_term_memory: Optional[VectorMemory] = None,
-        kg_memory: Optional[Union[KnowledgeGraphMemory, LocalKnowledgeGraphMemory]] = None
+        kg_memory: Optional[Union[KnowledgeGraphMemory, LocalKnowledgeGraphMemory]] = None,
+        importance_strategy: Optional[ImportanceStrategy] = None,
+        memory_thresholds: Optional[Dict[str, float]] = None
     ):
         """Initialize the memory manager.
         
@@ -77,6 +80,8 @@ class MemoryManager:
             working_memory: Working memory instance (will create one if not provided)
             long_term_memory: Long-term memory instance (will create one if not provided)
             kg_memory: Optional knowledge graph memory for semantic relationships
+            importance_strategy: Strategy for calculating importance of information
+            memory_thresholds: Thresholds for storing in different memory types
         """
         self.memories = {
             "working": working_memory or WorkingMemory(),
@@ -86,13 +91,21 @@ class MemoryManager:
         # Add knowledge graph memory if provided
         if kg_memory:
             self.memories["kg"] = kg_memory
+            
+        # Set importance strategy and thresholds
+        self.importance_strategy = importance_strategy or default_strategy
+        self.memory_thresholds = memory_thresholds or {
+            "long_term": 0.7,  # Threshold for long-term memory storage
+            "kg": 0.8  # Threshold for knowledge graph storage
+        }
         
     async def store(
         self, 
         key: str, 
         value: Any, 
-        importance: float = 0.5,
-        memory_types: Optional[List[str]] = None
+        importance: Optional[float] = None,
+        memory_types: Optional[List[str]] = None,
+        context: Optional[Dict[str, Any]] = None
     ) -> None:
         """Store information in memory.
         
@@ -101,20 +114,25 @@ class MemoryManager:
             value: The information to store
             importance: How important this information is (0.0-1.0)
             memory_types: Which memory systems to store in (if None, uses rules)
+            context: Additional context for importance calculation
         """
         # Convert value to string if needed for vector memory
         content = str(value) if not isinstance(value, str) else value
+        
+        # Calculate importance if not provided
+        if importance is None:
+            importance = await self.importance_strategy.calculate_importance(content, context)
         
         # Determine which memory systems to use
         if memory_types is None:
             memory_types = ["working"]
             
             # Important items go to long-term memory too
-            if importance > 0.7:
+            if importance > self.memory_thresholds.get("long_term", 0.7):
                 memory_types.append("long_term")
                 
             # Very important items also go to knowledge graph if available
-            if importance > 0.8 and "kg" in self.memories:
+            if importance > self.memory_thresholds.get("kg", 0.8) and "kg" in self.memories:
                 memory_types.append("kg")
         
         # Store in each specified memory system
@@ -252,10 +270,18 @@ class ConversationMemoryManager(MemoryManager):
         self,
         working_memory: Optional[WorkingMemory] = None,
         long_term_memory: Optional[VectorMemory] = None,
-        kg_memory: Optional[Union[KnowledgeGraphMemory, LocalKnowledgeGraphMemory]] = None
+        kg_memory: Optional[Union[KnowledgeGraphMemory, LocalKnowledgeGraphMemory]] = None,
+        importance_strategy: Optional[ImportanceStrategy] = None,
+        memory_thresholds: Optional[Dict[str, float]] = None
     ):
         """Initialize conversation memory manager."""
-        super().__init__(working_memory, long_term_memory, kg_memory)
+        super().__init__(
+            working_memory=working_memory,
+            long_term_memory=long_term_memory,
+            kg_memory=kg_memory,
+            importance_strategy=importance_strategy,
+            memory_thresholds=memory_thresholds
+        )
         self._messages: List[Message] = []
         
     async def add_message(self, message: Message, importance: Optional[float] = None) -> None:
@@ -268,9 +294,21 @@ class ConversationMemoryManager(MemoryManager):
         # Add to local message history
         self._messages.append(message)
         
+        # Create context for importance calculation
+        context = {
+            "role": message.role,
+            "message_index": len(self._messages) - 1,
+            "conversation_length": len(self._messages),
+            **message.additional_kwargs
+        }
+        
         # Determine message importance if not provided
         if importance is None:
-            importance = self._calculate_importance(message)
+            # Use strategy-based importance calculation
+            importance = await self.importance_strategy.calculate_importance(
+                message.content, 
+                context=context
+            )
             
         # Create key and metadata
         key = f"message_{len(self._messages)}"
@@ -278,16 +316,17 @@ class ConversationMemoryManager(MemoryManager):
             "role": message.role,
             "index": len(self._messages) - 1,
             "timestamp": time.time(),
+            "importance": importance,
             **message.additional_kwargs
         }
         
-        # Store in appropriate memory systems
+        # Store in appropriate memory systems based on configurable thresholds
         memory_types = ["working"]
-        if importance > 0.7:
+        if importance > self.memory_thresholds.get("long_term", 0.7):
             memory_types.append("long_term")
             
         # Very important messages also go to knowledge graph if available
-        if importance > 0.8 and "kg" in self.memories:
+        if importance > self.memory_thresholds.get("kg", 0.8) and "kg" in self.memories:
             memory_types.append("kg")
             
         # For long-term memory, we need to store content and metadata
@@ -423,29 +462,21 @@ class ConversationMemoryManager(MemoryManager):
             
         return unique_messages
     
-    def _calculate_importance(self, message: Message) -> float:
-        """Calculate importance of a message based on content and context.
+    def set_importance_strategy(self, strategy: ImportanceStrategy) -> None:
+        """Set the importance calculation strategy.
         
-        This is a simple implementation that will be enhanced over time.
+        Args:
+            strategy: The strategy to use for importance calculation
         """
-        importance = 0.5
+        self.importance_strategy = strategy
         
-        # Simple heuristics for importance
-        # Messages with questions are usually important
-        if "?" in message.content:
-            importance += 0.2
-            
-        # Messages with action items or decisions
-        action_keywords = ["must", "should", "need to", "important", "critical", "decide"]
-        if any(keyword in message.content.lower() for keyword in action_keywords):
-            importance += 0.3
-            
-        # User messages might be more important than system or assistant
-        if message.role == "user":
-            importance += 0.1
-            
-        # Cap importance at 1.0
-        return min(importance, 1.0)
+    def set_memory_thresholds(self, thresholds: Dict[str, float]) -> None:
+        """Set memory tier thresholds.
+        
+        Args:
+            thresholds: Dictionary mapping memory type to threshold value
+        """
+        self.memory_thresholds.update(thresholds)
         
     async def clear(self) -> None:
         """Clear conversation history and memories."""

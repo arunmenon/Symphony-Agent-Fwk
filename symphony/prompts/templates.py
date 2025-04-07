@@ -223,6 +223,25 @@ Remember: Your strength is efficiently managing complex workflows by leveraging 
 """
 }
 
+# Memory-related prompts
+MEMORY_PROMPTS: Dict[str, str] = {
+    "importance_assessment": """Evaluate the importance of this information for the agent's memory and future tasks.
+
+Content: {content}
+Agent role: {agent_role}
+Current task: {current_task}
+Conversation context: {context_summary}
+
+Determine how important it is to remember this information long-term on a scale of 0-10:
+
+0-3: Ephemeral information - casual remarks, pleasantries, or temporary details
+4-6: Contextually useful information - helpful for the current conversation but not critical
+7-8: Important information - task-relevant details, preferences, or constraints
+9-10: Critical information - key objectives, strict requirements, or essential facts
+
+Rate importance (0-10):"""
+}
+
 # Prompt formatting variables by agent type
 DEFAULT_VARIABLES: Dict[str, Dict[str, str]] = {
     "all": {
@@ -236,5 +255,10 @@ DEFAULT_VARIABLES: Dict[str, Dict[str, str]] = {
     "planner": {
         "planning_format": "1. Step description\n   - Success criteria\n   - Tools needed",
         "verification_guidelines": "Verify each step's completion before proceeding to the next.",
+    },
+    "memory": {
+        "context_summary": "Recent conversation summary goes here",
+        "agent_role": "Agent's role description",
+        "current_task": "Current task description",
     }
 }

@@ -7,6 +7,8 @@ from typing import Any, Dict, Optional
 import yaml
 from pydantic import BaseModel, Field
 
+from symphony.prompts.templates import DEFAULT_PROMPTS, MEMORY_PROMPTS
+
 
 class PromptTemplate(BaseModel):
     """A template for a prompt."""
@@ -29,8 +31,30 @@ class PromptRegistry:
         }
         self.cache: Dict[str, PromptTemplate] = {}
         
+        # Register built-in prompts
+        self._register_default_prompts()
+        
         if registry_path and os.path.exists(registry_path):
             self.load()
+            
+    def _register_default_prompts(self) -> None:
+        """Register the default prompts from templates."""
+        # Register agent system prompts
+        for agent_type, content in DEFAULT_PROMPTS.items():
+            self.register_prompt(
+                prompt_type="system",
+                content=content,
+                agent_type=agent_type,
+                metadata={"built_in": True}
+            )
+            
+        # Register memory-related prompts
+        for prompt_type, content in MEMORY_PROMPTS.items():
+            self.register_prompt(
+                prompt_type=f"memory.{prompt_type}",
+                content=content,
+                metadata={"built_in": True, "category": "memory"}
+            )
     
     def load(self) -> None:
         """Load prompts from registry file."""

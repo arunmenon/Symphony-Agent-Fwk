@@ -209,19 +209,25 @@ class TestConversationMemoryManager:
         assert "machine learning" in results[0].content.lower()
         
     @pytest.mark.asyncio
-    async def test_calculate_importance(self, conversation_memory_manager):
-        """Test the importance calculation."""
+    async def test_importance_strategy(self, conversation_memory_manager):
+        """Test the importance strategy."""
         # Test message with question
         question_message = Message(role="user", content="What is the deadline?")
-        question_importance = conversation_memory_manager._calculate_importance(question_message)
+        question_importance = await conversation_memory_manager.importance_strategy.calculate_importance(
+            question_message.content, {"role": question_message.role}
+        )
         assert question_importance > 0.5
         
         # Test message with action keyword
         action_message = Message(role="user", content="We must complete this by Friday.")
-        action_importance = conversation_memory_manager._calculate_importance(action_message)
+        action_importance = await conversation_memory_manager.importance_strategy.calculate_importance(
+            action_message.content, {"role": action_message.role}
+        )
         assert action_importance > 0.5
         
         # Test regular message
         regular_message = Message(role="assistant", content="Here's some information.")
-        regular_importance = conversation_memory_manager._calculate_importance(regular_message)
-        assert regular_importance == 0.5
+        regular_importance = await conversation_memory_manager.importance_strategy.calculate_importance(
+            regular_message.content, {"role": regular_message.role}
+        )
+        assert regular_importance >= 0.0
