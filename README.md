@@ -35,7 +35,7 @@ Here's a simple example of using Symphony with patterns:
 ```python
 import asyncio
 from symphony.api import Symphony
-from symphony.agents.config import AgentConfig
+from symphony.core.agent_config import AgentConfig
 
 async def main():
     # Initialize Symphony
@@ -147,7 +147,7 @@ Agents are the primary actors in Symphony. Each agent has:
 
 ### Memory Architecture
 
-Symphony provides a sophisticated memory architecture with domain awareness:
+Symphony provides a sophisticated memory architecture with configurable tiers:
 
 #### Multi-Tier Memory System
 - **Memory Manager**: Central coordinator for different memory systems
@@ -166,14 +166,16 @@ Symphony provides a sophisticated memory architecture with domain awareness:
 - **Importance Assessment**: Automatic evaluation of information importance
 - **Memory Consolidation**: Transfer of important information from working to long-term memory
 - **Conversation Memory**: Specialized memory for managing and searching conversation history
-- **Memory Factory**: Simplified creation of memory systems with domain strategies
+- **Memory Factory**: Simplified creation of memory systems with configurable strategies
 
 ```python
 # Basic usage with default importance assessment
 memory_manager = ConversationMemoryManager()
 
 # Custom memory with configurable importance assessment
+from symphony.memory.memory_manager import ConversationMemoryManager
 from symphony.memory.strategy_factory import ImportanceStrategyFactory
+from symphony.core.factory import MemoryFactory
 
 # Create memory with rule-based importance strategy
 memory = MemoryFactory.create_conversation_manager(
@@ -194,6 +196,31 @@ await memory.add_message(Message(
 
 # Search conversation using semantic memory
 results = await memory.search_conversation("important information")
+
+# Create a custom importance strategy for specific needs
+from symphony.memory.importance import RuleBasedStrategy
+
+class CustomImportanceStrategy(RuleBasedStrategy):
+    """Custom strategy for specialized importance assessment."""
+    
+    async def calculate_importance(self, content, context=None):
+        # Calculate base importance using parent method
+        importance = await super().calculate_importance(content, context)
+        
+        # Add custom logic
+        if "quarterly report" in content.lower():
+            importance += 0.3
+        if "investors" in content.lower():
+            importance += 0.2
+            
+        # Cap at 1.0
+        return min(importance, 1.0)
+
+# Use custom strategy with memory manager
+custom_memory = ConversationMemoryManager(
+    importance_strategy=CustomImportanceStrategy(),
+    memory_thresholds={"long_term": 0.6, "kg": 0.8}
+)
 ```
 
 ### Tools
@@ -214,21 +241,27 @@ The `examples/` directory contains complete examples demonstrating different asp
 ### Agent Examples
 - `simple_agent.py` - Basic reactive agent with tools
 - `planning_agent.py` - Planning-based agent with goal decomposition
+- `agent_reflection.py` - Self-improvement through reflection
 
 ### Pattern Examples
 - `patterns_example.py` - Using reasoning, verification, and multi-agent patterns
 - `tool_usage_patterns_example.py` - Examples of tool usage patterns
 - `learning_patterns_example.py` - Examples of learning patterns
+- `tool_verification.py` - Verifying tool usage and outputs
+- `enhanced_prompts.py` - Advanced prompt techniques
 
 ### Multi-Agent Examples
 - `multi_agent.py` - Coordinating multiple agents
 - `dag_workflow.py` - Complex workflow using a directed acyclic graph
+- `orchestration_example.py` - Orchestrating multiple agents
+- `goal_management.py` - Goal-driven agent collaboration
 
 ### Memory Examples
 - `memory_manager_example.py` - Using the advanced memory architecture
 - `strategic_memory_example.py` - Demonstrates importance-based memory strategies
 - `memory_factory_example.py` - Factory patterns for memory system creation
-- `importance_assessment_example.py` - Customizable importance evaluation approaches
+- `importance_assessment_example.py` - Configurable importance evaluation approaches
+- `configurable_memory_agent_example.py` - Building agents with customized memory
 - `vector_memory.py` - Semantic memory storage and retrieval
 - `knowledge_graph_memory.py` - Graph-based memory for relationship storage
 - `local_kg_memory.py` - Local knowledge graph without external dependencies
@@ -237,6 +270,13 @@ The `examples/` directory contains complete examples demonstrating different asp
 - `mcp_integration.py` - Model Context Protocol integration
 - `litellm_integration.py` - Multi-provider LLM support
 - `symphony_api_example.py` - Using the high-level Symphony API
+- `modular_architecture.py` - Modular system with plugins
+- `persistence_example.py` - Data persistence across sessions
+
+### Advanced Examples
+- `comprehensive_tutorial.py` - End-to-end tutorial
+- `benchmarking.py` - Performance evaluation
+- `execution_example.py` - Advanced execution patterns
 
 ## Testing
 
