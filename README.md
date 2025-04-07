@@ -45,7 +45,7 @@ async def main():
     agent_config = AgentConfig(
         name="reasoner",
         description="An agent that can perform reasoning",
-        model="gpt-4-turbo"
+        model="advanced-model"  # Use a model with strong reasoning capabilities
     )
     agent_id = await symphony.agents.create_agent(agent_config)
     
@@ -147,27 +147,49 @@ Agents are the primary actors in Symphony. Each agent has:
 
 ### Memory Architecture
 
-Symphony provides a sophisticated memory architecture:
+Symphony provides a sophisticated memory architecture with domain awareness:
+
+#### Multi-Tier Memory System
 - **Memory Manager**: Central coordinator for different memory systems
 - **Working Memory**: Short-term storage with automatic expiration for current context
 - **Long-Term Memory**: Persistent storage with semantic search capabilities
+- **Knowledge Graph Memory**: Structured relationship storage for complex knowledge
+
+#### Domain-Specific Memory Strategies
+- **Strategy Pattern**: Pluggable importance assessment strategies for different domains
+- **Domain-Specific Strategies**: Specialized for customer support, education, medical, personal assistant, and product research domains
+- **Rule-Based Assessment**: Keyword and pattern matching for fast evaluation
+- **LLM-Based Assessment**: Advanced semantic understanding of information importance
+- **Hybrid Strategies**: Combining domain rules with ML-based assessment
+
+#### Memory Operations
 - **Importance Assessment**: Automatic evaluation of information importance
 - **Memory Consolidation**: Transfer of important information from working to long-term memory
 - **Conversation Memory**: Specialized memory for managing and searching conversation history
+- **Memory Factory**: Simplified creation of memory systems with domain strategies
 
 ```python
-# Create a memory manager
+# Basic usage with default importance assessment
 memory_manager = ConversationMemoryManager()
 
-# Store information with different importance levels
-await memory_manager.store(
-    key="important_fact", 
-    value="The project deadline is Friday",
-    importance=0.9  # High importance - will go to long-term memory
+# Domain-specific memory with specialized strategy
+from symphony.memory.strategy_factory import ImportanceStrategyFactory
+
+# Create customer support memory with domain-specific strategy
+customer_memory = MemoryFactory.create_conversation_manager(
+    importance_strategy_type="customer_support",
+    strategy_params={"action_keywords": ["order", "refund", "urgent"]},
+    memory_thresholds={"long_term": 0.6, "kg": 0.8}
 )
 
-# Search conversation history
-results = await memory_manager.search_conversation("deadline")
+# Add messages to memory (importance calculated automatically)
+await customer_memory.add_message(Message(
+    role="user",
+    content="My order #12345 hasn't been delivered and it's urgent!"
+))
+
+# Search conversation using semantic memory
+results = await customer_memory.search_conversation("order problem")
 ```
 
 ### Tools
@@ -185,14 +207,33 @@ Orchestrators manage the execution flow between multiple agents, supporting patt
 
 The `examples/` directory contains complete examples demonstrating different aspects of the framework:
 
+### Agent Examples
 - `simple_agent.py` - Basic reactive agent with tools
+- `planning_agent.py` - Planning-based agent with goal decomposition
+
+### Pattern Examples
 - `patterns_example.py` - Using reasoning, verification, and multi-agent patterns
 - `tool_usage_patterns_example.py` - Examples of tool usage patterns
 - `learning_patterns_example.py` - Examples of learning patterns
+
+### Multi-Agent Examples
 - `multi_agent.py` - Coordinating multiple agents
-- `memory_manager_example.py` - Using the advanced memory architecture
-- `vector_memory.py` - Semantic memory storage and retrieval
 - `dag_workflow.py` - Complex workflow using a directed acyclic graph
+
+### Memory Examples
+- `memory_manager_example.py` - Using the advanced memory architecture
+- `strategic_memory_example.py` - Demonstrates importance-based memory strategies
+- `domain_strategies_example.py` - Domain-specific memory importance strategies
+- `domain_memory_agent_example.py` - Building agents with domain-specialized memory
+- `memory_factory_example.py` - Factory patterns for memory system creation
+- `vector_memory.py` - Semantic memory storage and retrieval
+- `knowledge_graph_memory.py` - Graph-based memory for relationship storage
+- `local_kg_memory.py` - Local knowledge graph without external dependencies
+
+### Integration Examples
+- `mcp_integration.py` - Model Context Protocol integration
+- `litellm_integration.py` - Multi-provider LLM support
+- `symphony_api_example.py` - Using the high-level Symphony API
 
 ## Testing
 
