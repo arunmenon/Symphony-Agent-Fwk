@@ -11,6 +11,7 @@ from symphony.memory.importance import ImportanceStrategy, RuleBasedStrategy
 from symphony.memory.memory_manager import MemoryManager, ConversationMemoryManager, WorkingMemory
 from symphony.memory.vector_memory import VectorMemory
 from symphony.memory.local_kg_memory import LocalKnowledgeGraphMemory
+from symphony.memory.strategy_factory import ImportanceStrategyFactory
 
 class AgentBuilder:
     """Builder for Symphony agents.
@@ -147,26 +148,24 @@ class AgentBuilder:
         """Set the importance calculation strategy for memory.
         
         Args:
-            strategy_type: Type of strategy ("rule", "llm", "hybrid")
+            strategy_type: Type of strategy
+                Basic types: "rule", "llm", "hybrid"
+                Domain-specific: "customer_support", "product_research", 
+                "personal_assistant", "educational", "medical"
+                Hybrid domain: "hybrid_customer_support", "hybrid_product_research", etc.
             **kwargs: Additional parameters for the strategy
             
         Returns:
             Self for chaining
         """
-        if strategy_type == "rule":
-            self.importance_strategy = RuleBasedStrategy(**kwargs)
-        elif strategy_type == "llm":
-            if "llm_client" not in kwargs:
-                raise ValueError("LLM client must be provided for LLM-based strategy")
-            from symphony.memory.importance import LLMBasedStrategy
-            self.importance_strategy = LLMBasedStrategy(**kwargs)
-        elif strategy_type == "hybrid":
-            if "strategies" not in kwargs:
-                raise ValueError("Strategies must be provided for hybrid strategy")
-            from symphony.memory.importance import HybridStrategy
-            self.importance_strategy = HybridStrategy(**kwargs)
-        else:
-            raise ValueError(f"Unknown strategy type: {strategy_type}")
+        try:
+            # Use the factory to create the appropriate strategy
+            self.importance_strategy = ImportanceStrategyFactory.create_strategy(
+                strategy_type, **kwargs
+            )
+        except ValueError as e:
+            # Re-raise with additional context
+            raise ValueError(f"Failed to create importance strategy: {str(e)}")
             
         return self
         
