@@ -1,4 +1,25 @@
-"""Example demonstrating Symphony's local knowledge graph memory capabilities."""
+"""Example demonstrating Symphony's local knowledge graph memory capabilities.
+
+This example showcases Symphony's local knowledge graph memory, which provides
+graph-based knowledge storage and retrieval without requiring external graph
+database services, making it ideal for standalone or lightweight deployments.
+
+Key concepts demonstrated:
+1. Local knowledge graph creation and configuration
+2. Knowledge extraction and embedding generation
+3. Triplet storage with confidence scores
+4. Semantic and relationship-based querying
+5. Agent integration with local knowledge graph
+6. Persistence and serialization of graph data
+
+Local knowledge graph memory offers the benefits of structured relationship
+storage with the convenience of local operation, supporting triplet extraction,
+storage, and semantic retrieval without external dependencies.
+
+IMPORTANT: For production use, utilize advanced language models with strong
+reasoning capabilities for knowledge extraction. The quality of extracted
+knowledge directly impacts the system's overall reasoning capabilities.
+"""
 
 import asyncio
 import datetime

@@ -1,4 +1,25 @@
-"""Example demonstrating Symphony's memory manager capabilities."""
+"""Example demonstrating Symphony's memory manager capabilities.
+
+This example showcases how to use Symphony's multi-tier memory system with
+various memory types including working memory, long-term (vector) memory,
+and knowledge graph memory.
+
+Key concepts demonstrated:
+1. Creating and configuring different memory types
+2. Storing information with importance-based routing
+3. Retrieving information from specific memory systems
+4. Memory consolidation (transferring important info to long-term storage)
+5. Creating an agent with advanced memory capabilities
+6. Conversation searching and knowledge extraction
+
+The memory manager provides a centralized system for memory coordination,
+automatically routing important information to appropriate storage tiers
+and providing unified retrieval capabilities.
+
+IMPORTANT: For production use, especially with LLM-based memory components,
+use powerful/advanced models for optimal results, as importance assessment
+requires sophisticated reasoning for effective memory operations.
+"""
 
 import asyncio
 import sys

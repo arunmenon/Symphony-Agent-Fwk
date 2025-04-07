@@ -1,4 +1,24 @@
-"""Example demonstrating Symphony's vector memory capabilities."""
+"""Example demonstrating Symphony's vector memory capabilities.
+
+This example showcases Symphony's vector-based memory system for long-term
+semantic storage and retrieval, which enables agents to find relevant information
+based on meaning rather than exact keyword matching.
+
+Key concepts demonstrated:
+1. Vector memory creation and configuration
+2. Embedding generation for semantic similarity
+3. Conversation memory with vector storage
+4. Semantic search capabilities
+5. Agent integration with advanced memory retrieval
+6. Memory persistence across sessions
+
+Vector memory provides the foundation for long-term memory in agents, enabling them
+to store and retrieve information based on semantic meaning and relevance rather than
+exact matches, significantly enhancing their ability to maintain context.
+
+IMPORTANT: For production use, utilize high-quality embedding models to ensure
+optimal semantic search results and retrieval performance.
+"""
 
 import asyncio
 import os

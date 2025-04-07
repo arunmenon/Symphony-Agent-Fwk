@@ -1,6 +1,6 @@
 """Factory classes for creating Symphony components."""
 
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Type, Union
 
 from symphony.agents.base import AgentBase, AgentConfig, ReactiveAgent
 from symphony.agents.planning import PlannerAgent
@@ -70,11 +70,34 @@ class LLMClientFactory:
     def create_from_provider(
         cls,
         provider: str,
-        model_name: str,
+        model_name: str = None,  # Default will be set based on provider
         api_key: Optional[str] = None,
         **kwargs: Any
     ) -> LiteLLMClient:
-        """Create an LLM client for a specific provider and model."""
+        """Create an LLM client for a specific provider and model.
+        
+        Args:
+            provider: The provider name (e.g., "openai", "anthropic")
+            model_name: The model name (if not provided, will use provider's recommended model)
+            api_key: Optional API key (will use env var if not provided)
+            **kwargs: Additional configuration parameters
+            
+        Returns:
+            Configured LLM client
+            
+        Note:
+            For memory importance assessment and other reasoning tasks, advanced language
+            models with strong reasoning capabilities are recommended for optimal results.
+        """
+        # Set default model per provider if not specified
+        if model_name is None:
+            if provider.lower() == "openai":
+                model_name = "gpt-4"
+            elif provider.lower() == "anthropic":
+                model_name = "claude-3-opus"
+            else:
+                # Generic default for other providers
+                model_name = "default"
         # Combine provider and model
         model = f"{provider}/{model_name}"
         
@@ -89,7 +112,22 @@ class LLMClientFactory:
 
 
 class MemoryFactory:
-    """Factory for creating memory instances."""
+    """Factory for creating memory system instances.
+    
+    This factory supports creating various types of memory systems:
+    
+    Basic Memory Types:
+    - "in_memory": Simple key-value storage (InMemoryMemory)
+    - "conversation": Basic conversation history storage (ConversationMemory)
+    
+    Advanced Memory Types:
+    - "working_memory": Short-term memory with automatic expiration (WorkingMemory)
+    - "memory_manager": Centralized manager for multiple memory tiers (MemoryManager) 
+    - "conversation_manager": Advanced conversation memory with importance assessment (ConversationMemoryManager)
+    
+    The factory integrates with domain-specific importance strategies to customize 
+    how different types of information are prioritized for memory storage.
+    """
     
     _memory_types: Dict[str, Type[BaseMemory]] = {
         "in_memory": InMemoryMemory,
@@ -104,10 +142,43 @@ class MemoryFactory:
     @classmethod
     def create(cls, memory_type: str, **kwargs: Any) -> BaseMemory:
         """Create a memory instance of the given type."""
+        # Check for advanced memory manager types
+        if memory_type == "memory_manager" or memory_type == "working_memory":
+            # Import here to avoid circular imports
+            from symphony.memory.memory_manager import MemoryManager, WorkingMemory
+            
+            if memory_type == "memory_manager":
+                return MemoryManager(**kwargs)
+            else:
+                return WorkingMemory(**kwargs)
+                
+        elif memory_type == "conversation_manager":
+            # Import here to avoid circular imports
+            from symphony.memory.memory_manager import ConversationMemoryManager
+            
+            # Check if an importance strategy was specified
+            if "importance_strategy_type" in kwargs:
+                from symphony.memory.strategy_factory import ImportanceStrategyFactory
+                
+                strategy_type = kwargs.pop("importance_strategy_type")
+                strategy_params = kwargs.pop("strategy_params", {})
+                
+                # Create the strategy using the factory
+                importance_strategy = ImportanceStrategyFactory.create_strategy(
+                    strategy_type, **strategy_params
+                )
+                
+                # Add to kwargs
+                kwargs["importance_strategy"] = importance_strategy
+                
+            return ConversationMemoryManager(**kwargs)
+            
+        # Fall back to basic memory types
         if memory_type not in cls._memory_types:
             raise ValueError(
                 f"Unknown memory type: {memory_type}. "
-                f"Available types: {', '.join(cls._memory_types.keys())}"
+                f"Available types: memory_manager, working_memory, conversation_manager, "
+                f"{', '.join(cls._memory_types.keys())}"
             )
             
         memory_cls = cls._memory_types[memory_type]
@@ -117,6 +188,52 @@ class MemoryFactory:
     def create_conversation_memory(cls) -> ConversationMemory:
         """Create a conversation memory instance."""
         return ConversationMemory()
+        
+    @classmethod
+    def create_conversation_manager(
+        cls, 
+        importance_strategy_type: Optional[str] = "rule", 
+        **kwargs: Any
+    ) -> BaseMemory:
+        """Create a conversation memory manager with the specified importance strategy.
+        
+        This convenience method makes it easy to create a ConversationMemoryManager
+        with a specific importance assessment strategy.
+        
+        Args:
+            importance_strategy_type: Type of importance strategy to use:
+                - Basic types: "rule", "llm", "hybrid"
+                - Domain-specific: "customer_support", "product_research", 
+                  "personal_assistant", "educational", "medical"
+                - Hybrid domain: "hybrid_customer_support", "hybrid_educational", etc.
+            **kwargs: Additional parameters including:
+                - strategy_params: Dict of parameters for the strategy (e.g., 
+                  llm_client, action_keywords, subjects, etc.)
+                - memory_thresholds: Dict of thresholds for memory tiers (e.g.,
+                  {"long_term": 0.7, "kg": 0.8})
+                
+        Returns:
+            Configured ConversationMemoryManager with specified importance strategy
+            
+        Example:
+            ```python
+            # Create memory manager with educational strategy
+            memory = MemoryFactory.create_conversation_manager(
+                importance_strategy_type="educational",
+                strategy_params={
+                    "subjects": ["physics", "math"],
+                    "learning_level": "advanced"
+                },
+                memory_thresholds={"long_term": 0.6, "kg": 0.8}
+            )
+            ```
+        """
+        return cls.create(
+            "conversation_manager", 
+            importance_strategy_type=importance_strategy_type,
+            strategy_params=kwargs.get("strategy_params", {}),
+            **{k: v for k, v in kwargs.items() if k != "strategy_params"}
+        )
 
 
 class MCPManagerFactory:

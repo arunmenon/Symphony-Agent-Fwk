@@ -1,4 +1,19 @@
-"""Example demonstrating agent building with domain-specific memory strategies."""
+"""Example demonstrating agent building with domain-specific memory strategies.
+
+This example demonstrates how to build Symphony agents with domain-specialized 
+memory systems using the AgentBuilder pattern and domain-specific importance strategies.
+
+Key concepts demonstrated:
+1. Building specialized agents for different domains (customer support, education, medical)
+2. Configuring memory systems with domain-specific importance assessment
+3. Creating hybrid strategies that combine domain rules with LLM-based assessment
+4. Message routing to appropriate memory tiers based on importance
+5. Specialized prompt templates for domain-specific LLM assessment
+
+IMPORTANT: For best results, use advanced language models with strong reasoning
+capabilities for LLM-based importance assessment. Higher-quality models provide
+more accurate importance evaluation, leading to better memory retention.
+"""
 
 import asyncio
 import sys
@@ -23,12 +38,25 @@ from symphony.utils.types import Message
 
 
 class MockLLMClient:
-    """Mock LLM client for demonstration purposes."""
+    """Mock LLM client that simulates high-quality model responses.
+    
+    This mock simulates the behavior of an advanced language model for importance
+    assessment. In production, you should use models with strong reasoning
+    capabilities for accurate importance evaluation.
+    """
     
     async def generate(self, prompt: str) -> str:
-        """Generate a response based on the prompt."""
+        """Generate a high-quality model response based on the prompt.
+        
+        Args:
+            prompt: The input prompt for importance assessment
+            
+        Returns:
+            A simulated high-quality model response
+        """
         # For importance assessment prompts
         if "Rate importance" in prompt or "Evaluate" in prompt:
+            # Simulate sophisticated reasoning about importance
             if "deadline" in prompt.lower() or "critical" in prompt.lower():
                 return "9"  # High importance for deadlines or critical info
             elif "meeting" in prompt.lower() or "task" in prompt.lower():
@@ -39,7 +67,7 @@ class MockLLMClient:
                 return "3"  # Low importance for general conversation
                 
         # Default response
-        return "This is a mock response."
+        return "This is a mock response simulating advanced model reasoning."
 
 
 async def build_customer_support_agent():

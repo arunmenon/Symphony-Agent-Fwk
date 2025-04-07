@@ -1,4 +1,25 @@
-"""Example demonstrating Symphony's knowledge graph memory capabilities."""
+"""Example demonstrating Symphony's knowledge graph memory capabilities.
+
+This example showcases Symphony's knowledge graph memory system, which extracts and
+stores structured relationships from unstructured text, enabling more sophisticated
+knowledge representation and reasoning capabilities.
+
+Key concepts demonstrated:
+1. Knowledge graph memory creation and configuration
+2. Knowledge extraction from text into subject-predicate-object triplets
+3. Storing structured knowledge relationships
+4. Querying the knowledge graph for specific relationships
+5. Agent integration with knowledge graph capabilities
+6. Graph-based reasoning and relationship traversal
+
+Knowledge graph memory provides a structured way to represent relationships between
+entities, enabling more sophisticated reasoning, fact validation, and relationship
+exploration than flat vector storage alone.
+
+IMPORTANT: For optimal knowledge extraction, use advanced language models with
+strong reasoning capabilities that can accurately identify relationships and
+generate consistent knowledge triplets.
+"""
 
 import asyncio
 import json

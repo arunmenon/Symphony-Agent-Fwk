@@ -86,7 +86,13 @@ class RuleBasedStrategy(ImportanceStrategy):
 
 
 class LLMBasedStrategy(ImportanceStrategy):
-    """Calculate importance using an LLM for semantic understanding."""
+    """Calculate importance using an LLM for semantic understanding.
+    
+    IMPORTANT: For accurate importance assessment, you should use advanced
+    language models with strong reasoning capabilities. Higher-quality models
+    provide more nuanced importance evaluation, which leads to better memory
+    retention decisions and more effective agent operations.
+    """
     
     def __init__(
         self,

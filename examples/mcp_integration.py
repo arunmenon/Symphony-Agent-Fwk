@@ -11,6 +11,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from symphony.agents.base import AgentConfig, ReactiveAgent
 from symphony.llm.base import MockLLMClient
 from symphony.mcp.base import MCPManager, MCPConfig
+from mcp.server.fastmcp import Context  # Import Context from MCP
 from symphony.prompts.registry import PromptRegistry
 from symphony.tools.base import tool
 from symphony.utils.types import Message

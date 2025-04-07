@@ -1,4 +1,21 @@
-"""Example demonstrating domain-specific importance assessment strategies."""
+"""Example demonstrating domain-specific importance assessment strategies for memory.
+
+This example showcases Symphony's specialized domain-specific memory importance strategies, 
+which determine how agent memory systems prioritize information. Different agent types 
+(customer support, educational, medical, etc.) have different requirements for what's 
+considered important information to remember.
+
+Key concepts demonstrated:
+1. Domain-specific strategy creation and configuration
+2. Importance assessment of different messages in context
+3. Storage location determination based on importance scores
+4. Comparative analysis of how different domains assess the same message
+5. Memory tier selection (working memory, long-term, knowledge graph)
+
+The domain strategies improve agent memory capabilities by encoding domain expertise
+into the memory system, ensuring the most relevant information is retained for each
+agent's specific purpose and context.
+"""
 
 import asyncio
 import sys
@@ -17,6 +34,32 @@ from symphony.memory.domain_strategies import (
 )
 from symphony.memory.memory_manager import ConversationMemoryManager
 from symphony.utils.types import Message
+
+
+class MockLLMClient:
+    """Mock LLM client that simulates high-quality model responses.
+    
+    This mock simulates the behavior of a powerful language model for importance
+    assessment. In production, you should use advanced models with strong
+    reasoning capabilities for accurate importance assessment.
+    """
+    
+    async def generate(self, prompt: str) -> str:
+        """Generate a high-quality model response based on the prompt."""
+        # For importance assessment prompts
+        if "Rate importance" in prompt or "Evaluate" in prompt:
+            # Simulate sophisticated reasoning about importance
+            if "deadline" in prompt.lower() or "critical" in prompt.lower():
+                return "9"  # High importance for deadlines or critical info
+            elif "meeting" in prompt.lower() or "task" in prompt.lower():
+                return "7"  # Medium-high importance for meetings/tasks
+            elif "preference" in prompt.lower():
+                return "5"  # Medium importance for preferences
+            else:
+                return "3"  # Low importance for general conversation
+                
+        # Default response
+        return "This is a mock response simulating advanced model reasoning."
 
 
 async def demonstrate_customer_support_strategy():

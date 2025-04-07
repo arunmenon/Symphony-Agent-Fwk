@@ -1,4 +1,23 @@
-"""Example demonstrating the strategy-based memory architecture."""
+"""Example demonstrating the strategy-based memory architecture.
+
+This example demonstrates Symphony's strategy pattern for memory importance assessment,
+showing how different strategies evaluate and prioritize information differently.
+
+Key concepts demonstrated:
+1. Rule-based strategy - Uses keywords, questions, and patterns to assess importance
+2. LLM-based strategy - Uses AI reasoning to evaluate semantic importance
+3. Hybrid strategy - Combines multiple approaches with configurable weights
+4. Strategy integration with conversation memory manager
+5. Importance calculation for different message types
+6. Memory tier selection based on calculated importance
+
+The strategy pattern enables pluggable, configurable importance assessment,
+allowing agents to have memory systems that align with their specific needs.
+
+IMPORTANT: For LLM-based strategies, always use powerful models with strong 
+reasoning capabilities, as accurate importance assessment depends on sophisticated 
+understanding of context and content relevance.
+"""
 
 import asyncio
 import sys
@@ -15,12 +34,25 @@ from symphony.utils.types import Message
 
 
 class MockLLMClient:
-    """Mock LLM client for demonstration purposes."""
+    """Mock LLM client that simulates high-quality model responses.
+    
+    This mock simulates the behavior of a powerful LLM for importance
+    assessment. In production, you should use advanced language models
+    with strong reasoning capabilities for accurate importance assessment.
+    """
     
     async def generate(self, prompt: str) -> str:
-        """Generate a response based on the prompt."""
+        """Generate a high-quality model response based on the prompt.
+        
+        Args:
+            prompt: The input prompt for importance assessment
+            
+        Returns:
+            A simulated high-quality model response
+        """
         # For importance assessment prompts
         if "Rate importance" in prompt:
+            # Simulate sophisticated reasoning about importance
             if "deadline" in prompt.lower() or "critical" in prompt.lower():
                 return "9"  # High importance for deadlines or critical info
             elif "meeting" in prompt.lower() or "task" in prompt.lower():
@@ -31,7 +63,7 @@ class MockLLMClient:
                 return "3"  # Low importance for general conversation
                 
         # Default response
-        return "This is a mock response."
+        return "This is a mock response simulating advanced model reasoning."
 
 
 async def demonstrate_rule_based_strategy():
