@@ -33,21 +33,22 @@ async def run_example():
     logger.info("\n=== Example 1: Technology Taxonomy with Model Assignments ===")
     
     # Define model assignments for different agents
-    model_assignments = {
+    models = {
         "planner": "openai/gpt-4o",     # Use the most advanced model for planning
         "explorer": "anthropic/claude-3-sonnet",  # Use Claude for exploration
         "compliance": "openai/gpt-4o-mini",  # Use smaller models for simpler tasks
         "legal": "openai/gpt-4o-mini"
     }
     
+    # Generate taxonomy with model assignments
     tech_taxonomy = await generate_taxonomy(
         root_category="Technology",
         output_path=os.path.join(output_dir, "technology_taxonomy.json"),
-        model_assignments=model_assignments
+        models=models  # Simply pass models as a parameter
     )
     
     logger.info("Using different models for each agent:")
-    for agent, model in model_assignments.items():
+    for agent, model in models.items():
         logger.info(f"  {agent.capitalize()}: {model}")
         
     logger.info(f"Generated Technology taxonomy with {len(tech_taxonomy['subcategories'])} top-level categories")
@@ -74,24 +75,24 @@ async def run_example():
     logger.info(f"Generated Pharmaceuticals taxonomy with {len(pharma_taxonomy['subcategories'])} top-level categories")
     
     # Example 3: Using the TaxonomyPlanner class directly with automatic state management
-    # and different models per agent
     logger.info("\n=== Example 3: Using TaxonomyPlanner with Different Models ===")
     
-    # Create custom config for weapons with model assignments
+    # Create custom config for weapons
     weapons_config = TaxonomyConfig()
     weapons_config.max_depth = 4
     weapons_config.default_jurisdictions = ["USA", "International"]
     
-    # Set different models for different agents
-    # Planning phase: Use a powerful model for complex reasoning
-    weapons_config.set_model_for_agent("planner", "openai/gpt-4o")
+    # Define model assignments in a clean, declarative way
+    models = {
+        "planner": "openai/gpt-4o",       # Complex reasoning needs powerful model 
+        "explorer": "openai/gpt-4-turbo",  # Balanced model for exploration
+        "compliance": "openai/gpt-4o-mini", # Cost-effective for simpler tasks
+        "legal": "openai/gpt-4o-mini"       # Cost-effective for simpler tasks
+    }
     
-    # Exploration phase: Use a balanced model for search-intensive tasks
-    weapons_config.set_model_for_agent("explorer", "openai/gpt-4-turbo")
-    
-    # Compliance and Legal: Use more cost-effective models for straightforward mapping tasks
-    weapons_config.set_model_for_agent("compliance", "openai/gpt-4o-mini")
-    weapons_config.set_model_for_agent("legal", "openai/gpt-4o-mini")
+    # Apply model assignments to config
+    for agent_name, model in models.items():
+        weapons_config.set_model_for_agent(agent_name, model)
     
     # Create planner instance - state management is automatically enabled
     planner = TaxonomyPlanner(config=weapons_config)
@@ -99,10 +100,8 @@ async def run_example():
     
     # Log the model assignments
     logger.info("Model assignments:")
-    logger.info(f"  Planning: {weapons_config.get_model_for_agent('planner')}")
-    logger.info(f"  Exploration: {weapons_config.get_model_for_agent('explorer')}")
-    logger.info(f"  Compliance: {weapons_config.get_model_for_agent('compliance')}")
-    logger.info(f"  Legal: {weapons_config.get_model_for_agent('legal')}")
+    for agent_name, model in models.items():
+        logger.info(f"  {agent_name.capitalize()}: {model}")
     
     # Generate taxonomy - if interrupted, it will resume from last checkpoint when run again
     weapons_taxonomy = await planner.generate_taxonomy(

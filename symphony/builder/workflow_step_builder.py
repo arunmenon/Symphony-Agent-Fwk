@@ -31,6 +31,8 @@ class StepBuilder:
         
         # TaskStep specific
         self.agent = None
+        self.agent_type = None  # New: For agent creation by type
+        self.model = None  # New: Model identifier for the agent
         self.task_text = None
         self.pattern = None
         self.output_key = None
@@ -88,6 +90,38 @@ class StepBuilder:
         """
         self.agent = agent
         self.step_type = "task"
+        return self
+        
+    def agent_type(self, agent_type: str) -> 'StepBuilder':
+        """Set the agent type for a task step.
+        
+        Instead of providing a specific agent instance, this allows specifying
+        an agent type that will be created with the specified model when the
+        workflow is executed.
+        
+        Args:
+            agent_type: Type of agent to create (e.g., "planner", "explorer")
+            
+        Returns:
+            Self for chaining
+        """
+        self.agent_type = agent_type
+        self.step_type = "task"
+        return self
+        
+    def model(self, model: str) -> 'StepBuilder':
+        """Set the model to use for the agent in this step.
+        
+        The model can be specified in LiteLLM format: "provider/model_name"
+        (e.g., "openai/gpt-4o", "anthropic/claude-3-opus").
+        
+        Args:
+            model: Model identifier to use
+            
+        Returns:
+            Self for chaining
+        """
+        self.model = model
         return self
     
     def task(self, task_text: str) -> 'StepBuilder':
@@ -280,8 +314,6 @@ class StepBuilder:
             if not self.task_text:
                 raise ValueError("Task text is required for task step")
             
-            agent_id = self.agent.id if hasattr(self.agent, "id") else None
-            
             # Create task template
             task_template = {
                 "description": self.task_text
@@ -299,6 +331,27 @@ class StepBuilder:
             # Add context data if any
             if self.context_data:
                 task_template["context_data"] = self.context_data
+            
+            # Add model information if specified
+            if self.model:
+                task_template["model"] = self.model
+            
+            # Handle agent information
+            agent_id = None
+            if self.agent:
+                agent_id = self.agent.id if hasattr(self.agent, "id") else None
+                
+                # If both agent instance and model are specified, also add model to template
+                # This allows overriding the agent's default model
+                if self.model and hasattr(self.agent, "model"):
+                    task_template["model"] = self.model
+                    
+            # Add agent_type information if provided
+            if self.agent_type:
+                task_template["agent_type"] = self.agent_type
+                
+            # If no agent provided but agent_type and model are specified,
+            # these will be used to create an agent instance during execution
             
             return TaskStep(
                 name=self.name,

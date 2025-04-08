@@ -29,6 +29,10 @@ class WorkflowBuilder:
         self.initial_context: Dict[str, Any] = {}
         self.step_builder = None
         
+        # Model configuration
+        self.model_config: Dict[str, str] = {}
+        self.default_model: Optional[str] = None
+        
     def create(self, name: str, description: str = "", metadata: Dict[str, Any] = None) -> 'WorkflowBuilder':
         """Create a new workflow definition.
         
@@ -207,6 +211,34 @@ class WorkflowBuilder:
         self.initial_context = context
         return self
         
+    def model_assignments(self, assignments: Dict[str, str]) -> 'WorkflowBuilder':
+        """Set model assignments for different agent types in the workflow.
+        
+        This allows specifying which models to use for different agent types,
+        rather than having to set the model for each step individually.
+        
+        Args:
+            assignments: Dictionary mapping agent types to model identifiers
+                         (e.g., {"planner": "openai/gpt-4o", "explorer": "anthropic/claude-3-sonnet"})
+            
+        Returns:
+            Self for chaining
+        """
+        self.model_config = assignments
+        return self
+        
+    def default_model(self, model: str) -> 'WorkflowBuilder':
+        """Set the default model to use for all agents when not specified.
+        
+        Args:
+            model: Default model identifier to use
+            
+        Returns:
+            Self for chaining
+        """
+        self.default_model = model
+        return self
+        
     def build_step(self) -> StepBuilder:
         """Create a step builder.
         
@@ -228,9 +260,31 @@ class WorkflowBuilder:
         if not self.workflow_def:
             raise ValueError("Workflow not created. Call create() first.")
             
-        # Convert StepBuilder to WorkflowStep if needed
+        # Apply model configurations to StepBuilder if needed
         if isinstance(step, StepBuilder):
+            # If step has an agent_type but no model, apply model from workflow config
+            if step.agent_type and not step.model:
+                if step.agent_type in self.model_config:
+                    step.model(self.model_config[step.agent_type])
+                elif self.default_model:
+                    step.model(self.default_model)
+            
+            # Build the step
             step = step.build()
+        
+        # For WorkflowStep instances, we can't modify them directly
+        # But for TaskStep, we can check if the task template contains agent_type
+        # and if so, apply model from workflow config
+        elif isinstance(step, TaskStep):
+            task_template = step.task_template
+            if isinstance(task_template, dict):
+                agent_type = task_template.get("agent_type")
+                if agent_type and "model" not in task_template:
+                    if agent_type in self.model_config:
+                        # We'd need to modify the task_template, but this isn't ideal
+                        # as WorkflowStep instances are meant to be immutable
+                        # This is why using StepBuilder is preferred
+                        pass
             
         self.workflow_def = self.workflow_def.add_step(step)
         return self
@@ -238,11 +292,29 @@ class WorkflowBuilder:
     def build(self) -> WorkflowDefinition:
         """Build the workflow definition.
         
+        This method finalizes the workflow definition, including any model
+        configurations in the workflow metadata.
+        
         Returns:
             Workflow definition
         """
         if not self.workflow_def:
             raise ValueError("Workflow not created. Call create() first.")
+        
+        # Add model configuration to metadata if present
+        if self.model_config or self.default_model:
+            metadata = self.workflow_def.metadata.copy()
+            
+            # Store model assignments in metadata
+            if self.model_config:
+                metadata["model_assignments"] = self.model_config
+                
+            # Store default model
+            if self.default_model:
+                metadata["default_model"] = self.default_model
+                
+            # Update workflow definition with new metadata
+            self.workflow_def.metadata = metadata
         
         return self.workflow_def
     

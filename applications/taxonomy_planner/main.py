@@ -338,7 +338,7 @@ async def generate_taxonomy(
     max_depth: Optional[int] = None,
     output_path: Optional[str] = None,
     config: Optional[TaxonomyConfig] = None,
-    model_assignments: Optional[Dict[str, str]] = None
+    **kwargs
 ) -> Dict[str, Any]:
     """Generate a taxonomy with compliance and legal mappings.
     
@@ -348,8 +348,7 @@ async def generate_taxonomy(
         max_depth: Maximum depth of taxonomy
         output_path: Path to save the output JSON
         config: Custom configuration
-        model_assignments: Dictionary mapping agent names to model IDs
-                          (e.g., {"planner": "openai/gpt-4o", "explorer": "anthropic/claude-3-sonnet"})
+        **kwargs: Additional configuration options
         
     Returns:
         Generated taxonomy
@@ -358,10 +357,12 @@ async def generate_taxonomy(
     if config is None:
         config = TaxonomyConfig()
     
-    # Apply model assignments if provided
-    if model_assignments:
-        for agent_name, model in model_assignments.items():
-            config.set_model_for_agent(agent_name, model)
+    # Handle model assignments if present in kwargs
+    if "models" in kwargs:
+        models = kwargs.pop("models")
+        if isinstance(models, dict):
+            for agent_name, model in models.items():
+                config.set_model_for_agent(agent_name, model)
     
     # Create and set up planner
     planner = TaxonomyPlanner(config)

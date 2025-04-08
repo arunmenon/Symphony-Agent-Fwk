@@ -13,6 +13,12 @@ from symphony.persistence.repository import Repository
 from symphony.execution.workflow_tracker import WorkflowTracker, Workflow, WorkflowStatus
 from symphony.orchestration.workflow_definition import WorkflowDefinition, WorkflowContext, WorkflowStep, StepResult
 
+# Import state management components (conditionally to avoid import errors)
+try:
+    from symphony.core.state import CheckpointManager
+except ImportError:
+    CheckpointManager = None
+
 
 class WorkflowEngine:
     """Engine for executing workflow definitions.
@@ -62,16 +68,67 @@ class WorkflowEngine:
             
     async def execute_workflow(self, 
                              workflow_def: WorkflowDefinition, 
-                             initial_context: Dict[str, Any] = None) -> Workflow:
+                             initial_context: Dict[str, Any] = None,
+                             auto_checkpoint: bool = True,
+                             resume_from_checkpoint: bool = True,
+                             model_assignments: Optional[Dict[str, str]] = None) -> Workflow:
         """Execute a workflow from its definition.
         
         Args:
             workflow_def: Workflow definition to execute
             initial_context: Initial context data for workflow execution
+            auto_checkpoint: Whether to automatically create checkpoints during execution
+            resume_from_checkpoint: Whether to try resuming from a checkpoint if available
             
         Returns:
             The executed workflow instance
         """
+        # Check if state management is available and enabled
+        checkpoint_manager = None
+        if (auto_checkpoint or resume_from_checkpoint) and CheckpointManager is not None:
+            checkpoint_manager = self.service_registry.get("checkpoint_manager")
+        
+        # Check for existing workflow checkpoint to resume
+        resumed_workflow = None
+        if resume_from_checkpoint and checkpoint_manager:
+            try:
+                # Look for checkpoints related to this workflow definition
+                checkpoint_pattern = f"workflow_*_{workflow_def.name.replace(' ', '_').lower()}"
+                checkpoints = await self._find_matching_checkpoints(checkpoint_pattern)
+                
+                if checkpoints:
+                    # Sort by creation time (newest first)
+                    latest_checkpoint = sorted(checkpoints, key=lambda c: c.get("created_at", ""), reverse=True)[0]
+                    
+                    # Restore from checkpoint
+                    await checkpoint_manager.restore_checkpoint(
+                        self.service_registry.get("symphony_instance"),
+                        latest_checkpoint["id"]
+                    )
+                    
+                    # Extract workflow ID from checkpoint name
+                    # Format: workflow_{workflow_id}_{stage}
+                    checkpoint_name = latest_checkpoint.get("name", "")
+                    if checkpoint_name.startswith("workflow_"):
+                        parts = checkpoint_name.split("_")
+                        if len(parts) > 1:
+                            workflow_id = parts[1]
+                            
+                            # Try to get the workflow
+                            resumed_workflow = await self.workflow_tracker.get_workflow(workflow_id)
+                            
+                            if resumed_workflow and resumed_workflow.status != WorkflowStatus.COMPLETED:
+                                # We found a workflow in progress, so we'll resume it
+                                print(f"Resuming workflow {workflow_id} from checkpoint {latest_checkpoint['id']}")
+                                
+                                # TODO: Implement full workflow resumption logic
+                                # For now, we'll just return the resumed workflow
+                                # In the future, we should continue execution from where it left off
+                                return resumed_workflow
+            except Exception as e:
+                # Log resumption error but continue with fresh execution
+                print(f"Warning: Failed to resume workflow from checkpoint: {e}")
+        
         # Create a new workflow execution
         workflow = await self.workflow_tracker.create_workflow(
             name=workflow_def.name,
@@ -84,9 +141,22 @@ class WorkflowEngine:
         await self.workflow_tracker.workflow_repository.update(workflow)
         
         # Create workflow context
+        context_data = initial_context.copy() if initial_context else {}
+        
+        # Add model assignments to context if provided
+        if model_assignments:
+            context_data["model_assignments"] = model_assignments
+        elif "model_assignments" in workflow_def.metadata:
+            # Use model assignments from workflow metadata
+            context_data["model_assignments"] = workflow_def.metadata["model_assignments"]
+            
+        # Add default model to context if present in workflow metadata
+        if "default_model" in workflow_def.metadata:
+            context_data["default_model"] = workflow_def.metadata["default_model"]
+            
         context = WorkflowContext(
             workflow_id=workflow.id,
-            data=initial_context or {},
+            data=context_data,
             service_registry=self.service_registry
         )
         
@@ -99,6 +169,24 @@ class WorkflowEngine:
         await self.workflow_tracker.update_workflow_status(
             workflow.id, WorkflowStatus.RUNNING
         )
+        
+        # Create initial checkpoint if enabled
+        if checkpoint_manager:
+            try:
+                checkpoint_id = await checkpoint_manager.create_checkpoint(
+                    self.service_registry.get("symphony_instance"),
+                    name=f"workflow_{workflow.id}_start",
+                    metadata={
+                        "workflow_id": workflow.id,
+                        "workflow_name": workflow_def.name,
+                        "stage": "start",
+                        "timestamp": datetime.now().isoformat()
+                    }
+                )
+                context.set("initial_checkpoint_id", checkpoint_id)
+            except Exception as e:
+                # Log checkpoint error but continue execution
+                print(f"Warning: Failed to create initial checkpoint: {e}")
         
         try:
             # Get instantiated steps
@@ -124,6 +212,26 @@ class WorkflowEngine:
                     "error": step_result.error
                 })
                 
+                # Create checkpoint after step if enabled
+                if checkpoint_manager and (i > 0 and i % 3 == 0):  # Checkpoint every 3 steps
+                    try:
+                        checkpoint_id = await checkpoint_manager.create_checkpoint(
+                            self.service_registry.get("symphony_instance"),
+                            name=f"workflow_{workflow.id}_step_{i}",
+                            metadata={
+                                "workflow_id": workflow.id,
+                                "workflow_name": workflow_def.name,
+                                "step_index": i,
+                                "step_name": step.name,
+                                "stage": "mid_execution",
+                                "timestamp": datetime.now().isoformat()
+                            }
+                        )
+                        context.set(f"checkpoint_after_step_{i}", checkpoint_id)
+                    except Exception as e:
+                        # Log checkpoint error but continue execution
+                        print(f"Warning: Failed to create checkpoint after step {i}: {e}")
+                
                 # If a step fails, mark workflow as failed and break
                 if not step_result.success:
                     error_message = (
@@ -137,6 +245,28 @@ class WorkflowEngine:
                     
                     # Store error in context
                     context.set("workflow_error", error_message)
+                    
+                    # Create error checkpoint if enabled
+                    if checkpoint_manager:
+                        try:
+                            checkpoint_id = await checkpoint_manager.create_checkpoint(
+                                self.service_registry.get("symphony_instance"),
+                                name=f"workflow_{workflow.id}_error",
+                                metadata={
+                                    "workflow_id": workflow.id,
+                                    "workflow_name": workflow_def.name,
+                                    "error_step_index": i,
+                                    "error_step_name": step.name,
+                                    "error_message": error_message,
+                                    "stage": "error",
+                                    "timestamp": datetime.now().isoformat()
+                                }
+                            )
+                            context.set("error_checkpoint_id", checkpoint_id)
+                        except Exception as e:
+                            # Log checkpoint error
+                            print(f"Warning: Failed to create error checkpoint: {e}")
+                    
                     break
             
             # If all steps completed successfully, mark workflow as completed
@@ -146,6 +276,24 @@ class WorkflowEngine:
                 )
                 context.set("workflow_completed", True)
                 context.set("workflow_end_time", datetime.now().isoformat())
+                
+                # Create completion checkpoint if enabled
+                if checkpoint_manager:
+                    try:
+                        checkpoint_id = await checkpoint_manager.create_checkpoint(
+                            self.service_registry.get("symphony_instance"),
+                            name=f"workflow_{workflow.id}_complete",
+                            metadata={
+                                "workflow_id": workflow.id,
+                                "workflow_name": workflow_def.name,
+                                "stage": "complete",
+                                "timestamp": datetime.now().isoformat()
+                            }
+                        )
+                        context.set("completion_checkpoint_id", checkpoint_id)
+                    except Exception as e:
+                        # Log checkpoint error
+                        print(f"Warning: Failed to create completion checkpoint: {e}")
         
         except Exception as e:
             # Handle any unexpected errors
@@ -164,6 +312,25 @@ class WorkflowEngine:
                 "timestamp": datetime.now().isoformat()
             })
             
+            # Create error checkpoint if enabled
+            if checkpoint_manager:
+                try:
+                    checkpoint_id = await checkpoint_manager.create_checkpoint(
+                        self.service_registry.get("symphony_instance"),
+                        name=f"workflow_{workflow.id}_exception",
+                        metadata={
+                            "workflow_id": workflow.id,
+                            "workflow_name": workflow_def.name,
+                            "exception": str(e),
+                            "stage": "exception",
+                            "timestamp": datetime.now().isoformat()
+                        }
+                    )
+                    context.set("exception_checkpoint_id", checkpoint_id)
+                except Exception as checkpoint_error:
+                    # Log checkpoint error
+                    print(f"Warning: Failed to create exception checkpoint: {checkpoint_error}")
+            
         finally:
             # Store final context in workflow metadata
             workflow = await self.workflow_tracker.get_workflow(workflow.id)
@@ -173,3 +340,36 @@ class WorkflowEngine:
             
         # Return the updated workflow
         return await self.workflow_tracker.get_workflow(workflow.id)
+        
+    async def _find_matching_checkpoints(self, name_pattern: str) -> List[Dict[str, Any]]:
+        """Find checkpoints matching a name pattern.
+        
+        Args:
+            name_pattern: Pattern to match checkpoint names against
+            
+        Returns:
+            List of matching checkpoints
+        """
+        if CheckpointManager is None:
+            return []
+            
+        checkpoint_manager = self.service_registry.get("checkpoint_manager")
+        if not checkpoint_manager:
+            return []
+            
+        try:
+            # List all checkpoints
+            checkpoints = await checkpoint_manager.list_checkpoints()
+            
+            # Filter by name pattern
+            import fnmatch
+            matching = []
+            for checkpoint in checkpoints:
+                if fnmatch.fnmatch(checkpoint.get("name", ""), name_pattern):
+                    matching.append(checkpoint)
+                    
+            return matching
+            
+        except Exception as e:
+            print(f"Error finding matching checkpoints: {e}")
+            return []

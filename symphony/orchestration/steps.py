@@ -62,15 +62,40 @@ class TaskStep(WorkflowStep):
             # Create task
             task = await task_manager.create_task(**resolved_task)
             
-            # Determine the agent to use
-            agent_id = self.agent_id or context.get("default_agent_id")
-            if agent_id:
-                agent = await agent_factory.create_agent_from_id(agent_id)
-            else:
-                # Use router to find appropriate agent
-                router = context.get_service("task_router")
-                agent_id = await router.route_task(task)
-                agent = await agent_factory.create_agent_from_id(agent_id)
+            # Check for agent type in resolved task
+            agent_type = resolved_task.get("agent_type")
+            model = resolved_task.get("model")
+            
+            agent = None
+            
+            # If agent_type is specified, create agent of that type with specified model
+            if agent_type:
+                # First check if we have a dedicated factory method for this agent type
+                agent_creator = getattr(agent_factory, f"create_{agent_type}_agent", None)
+                if agent_creator and callable(agent_creator):
+                    # Create agent using specialized factory method
+                    agent_kwargs = {}
+                    if model:
+                        agent_kwargs["model"] = model
+                    agent = await agent_creator(**agent_kwargs)
+                else:
+                    # Use generic method with type parameter
+                    agent = await agent_factory.create_agent(agent_type=agent_type, model=model)
+            
+            # If no agent was created via agent_type, use traditional agent_id approach
+            if not agent:
+                agent_id = self.agent_id or context.get("default_agent_id")
+                if agent_id:
+                    agent = await agent_factory.create_agent_from_id(agent_id)
+                    
+                    # If we have a model override, we may need to adjust the agent's model
+                    if model and hasattr(agent, "model"):
+                        agent.model = model
+                else:
+                    # Use router to find appropriate agent
+                    router = context.get_service("task_router")
+                    agent_id = await router.route_task(task)
+                    agent = await agent_factory.create_agent_from_id(agent_id)
             
             # Execute with enhanced executor
             result_task = await executor.execute_task(
