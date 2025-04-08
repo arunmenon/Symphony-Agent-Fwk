@@ -1,0 +1,308 @@
+{
+  "name": "Nudity",
+  "subcategories": [
+    {
+      "name": "Artistic Nudity",
+      "subcategories": [
+        {
+          "name": "Fine Art",
+          "compliance": {
+            "USA": {
+              "regulations": "Subject to obscenity laws and community standards.",
+              "permits": "May require permits for public installations."
+            }
+          },
+          "legal": {
+            "USA": {
+              "copyright": "Protected under Free Speech (First Amendment).",
+              "age_restrictions": "No specific age restrictions, but exhibitions may limit access based on content."
+            }
+          }
+        },
+        {
+          "name": "Performance Art",
+          "compliance": {
+            "USA": {
+              "regulations": "Must comply with local decency laws and venue policies."
+            }
+          },
+          "legal": {
+            "USA": {
+              "permits": "Performance permits may be required for public spaces.",
+              "liability": "Artists and organizers may need liability insurance."
+            }
+          }
+        },
+        {
+          "name": "Photography",
+          "compliance": {
+            "USA": {
+              "regulations": "Must adhere to model releases and privacy laws."
+            }
+          },
+          "legal": {
+            "USA": {
+              "intellectual_property": "Photographs are protected under copyright law.",
+              "consent": "Informed consent required for identifiable subjects."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Commercial Nudity",
+      "subcategories": [
+        {
+          "name": "Advertising",
+          "compliance": {
+            "USA": {
+              "regulations": "Must comply with FTC advertising guidelines and decency standards."
+            }
+          },
+          "legal": {
+            "USA": {
+              "disclaimer": "Clear labeling if content is explicit.",
+              "age_restrictions": "Marketing to adults may require age verification."
+            }
+          }
+        },
+        {
+          "name": "Film and Television",
+          "compliance": {
+            "USA": {
+              "regulations": "Subject to FCC regulations and MPAA guidelines."
+            }
+          },
+          "legal": {
+            "USA": {
+              "content_rating": "Must be rated appropriately (e.g., NC-17, R).",
+              "actor contracts": "Explicit scenes require specific agreements."
+            }
+          }
+        },
+        {
+          "name": "Modeling",
+          "compliance": {
+            "USA": {
+              "regulations": "Must follow labor laws and industry standards."
+            }
+          },
+          "legal": {
+            "USA": {
+              "contracts": "Agreements must detail usage rights and consent.",
+              "age_verification": "Models under 18 require parental consent."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public Nudity",
+      "subcategories": [
+        {
+          "name": "Protests and Demonstrations",
+          "compliance": {
+            "USA": {
+              "regulations": "Must obtain necessary permits and adhere to free speech rights."
+            }
+          },
+          "legal": {
+            "USA": {
+              "protected_speech": "Allowed under First Amendment, within public decency laws.",
+              "restrictions": "Cannot interfere with public order or involve lewd conduct."
+            }
+          }
+        },
+        {
+          "name": "Beaches and Parks",
+          "compliance": {
+            "USA": {
+              "regulations": "Local ordinances dictate allowed areas and conditions."
+            }
+          },
+          "legal": {
+            "USA": {
+              "zonings": "Designated clothing-optional areas may exist.",
+              "penalties": "Violations can result in fines or arrest."
+            }
+          }
+        },
+        {
+          "name": "Events and Festivals",
+          "compliance": {
+            "USA": {
+              "regulations": "Must comply with event-specific rules and local laws."
+            }
+          },
+          "legal": {
+            "USA": {
+              "permits": "Special permits may be required for nude participation.",
+              "age_restrictions": "Events may enforce age limits based on content."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Media and Digital Nudity",
+      "subcategories": [
+        {
+          "name": "Social Media",
+          "compliance": {
+            "USA": {
+              "platform_policies": "Must adhere to individual platform's community guidelines."
+            }
+          },
+          "legal": {
+            "USA": {
+              "content_removal": "Platforms may remove explicit content regardless of legality.",
+              "user_age": "Users must meet age requirements to post or view content."
+            }
+          }
+        },
+        {
+          "name": "Virtual Reality",
+          "compliance": {
+            "USA": {
+              "regulations": "Emerging standards apply; must follow general decency laws."
+            }
+          },
+          "legal": {
+            "USA": {
+              "intellectual_property": "Virtual creations are protected under copyright.",
+              "user consent": "Participants must consent to explicit content."
+            }
+          }
+        },
+        {
+          "name": "Streaming Services",
+          "compliance": {
+            "USA": {
+              "FCC regulations": "Live streams must comply with broadcasting laws."
+            }
+          },
+          "legal": {
+            "USA": {
+              "age_verification": "Content warnings and age restrictions are required.",
+              "licensed content": "Must have rights to display explicit material."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Medical and Health-related Nudity",
+      "subcategories": [
+        {
+          "name": "Medical Examinations",
+          "compliance": {
+            "USA": {
+              "HIPAA": "Patient information and images must be protected."
+            }
+          },
+          "legal": {
+            "USA": {
+              "consent": "Informed consent required for any photographic documentation.",
+              "confidentiality": "Strict confidentiality must be maintained."
+            }
+          }
+        },
+        {
+          "name": "Therapeutic Practices",
+          "compliance": {
+            "USA": {
+              "professional licenses": "Practitioners must hold relevant licenses."
+            }
+          },
+          "legal": {
+            "USA": {
+              "scope_of_practice": "Must adhere to state-specific regulations.",
+              "client consent": "Clients must consent to any nude therapy sessions."
+            }
+          }
+        },
+        {
+          "name": "Body Modification",
+          "compliance": {
+            "USA": {
+              "health regulations": "Must comply with state and local health codes."
+            }
+          },
+          "legal": {
+            "USA": {
+              "licensing": "Practitioners must be licensed as required.",
+              "age restrictions": "Minors require parental consent for procedures."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Educational Nudity",
+      "subcategories": [
+        {
+          "name": "Sex Education",
+          "compliance": {
+            "USA": {
+              "state curricula": "Must align with state educational standards."
+            }
+          },
+          "legal": {
+            "USA": {
+              "age appropriateness": "Content must be suitable for the target age group.",
+              "parental consent": "May be required for certain explicit materials."
+            }
+          }
+        },
+        {
+          "name": "Anatomy Classes",
+          "compliance": {
+            "USA": {
+              "institutional policies": "Must follow educational institution guidelines."
+            }
+          },
+          "legal": {
+            "USA": {
+              "consent": "Students must consent to dissections or model use.",
+              "ethical standards": "Must adhere to ethical considerations in teaching."
+            }
+          }
+        },
+        {
+          "name": "Workshops and Seminars",
+          "compliance": {
+            "USA": {
+              "venue regulations": "Must comply with host venue's policies."
+            }
+          },
+          "legal": {
+            "USA": {
+              "content disclaimers": "Provide clear disclaimers about explicit content.",
+              "age verification": "Ensure participants meet age requirements."
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "compliance": {
+    "USA": {
+      "general": "Nudity classifications must adhere to federal, state, and local laws, including obscenity statutes, decency standards, and specific regulations pertaining to various contexts."
+    }
+  },
+  "legal": {
+    "USA": {
+      "general": "Legal considerations include First Amendment protections for artistic expression, age restrictions, consent requirements, and adherence to intellectual property laws. Enforcement varies by jurisdiction and context."
+    }
+  },
+  "metadata": {
+    "generated_at": "2025-04-08T19:34:09.271655",
+    "model": "o1-mini",
+    "max_depth": 4,
+    "breadth_limit": 10,
+    "strategy": "parallel",
+    "jurisdictions": [
+      "USA"
+    ]
+  }
+}

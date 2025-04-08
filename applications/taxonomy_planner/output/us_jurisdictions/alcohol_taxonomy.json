@@ -1,0 +1,739 @@
+{
+  "name": "Alcohol",
+  "subcategories": [
+    {
+      "name": "Types of Alcoholic Beverages",
+      "subcategories": [
+        {
+          "name": "Beer",
+          "subcategories": [
+            {
+              "name": "Lager"
+            },
+            {
+              "name": "Ale"
+            },
+            {
+              "name": "Stout"
+            },
+            {
+              "name": "IPA"
+            }
+          ],
+          "compliance": {
+            "federal": "Regulated by the Alcohol and Tobacco Tax and Trade Bureau (TTB). Must adhere to labeling requirements and tax obligations.",
+            "state": "Varies by state; may require specific state licenses and adhere to state-specific advertising laws."
+          },
+          "legal": {
+            "ageRestriction": "21+",
+            "licensing": "Breweries must obtain a federal brewer's notice and state licenses.",
+            "labeling": "Must include alcohol content, ingredients, and health warnings as per TTB guidelines."
+          }
+        },
+        {
+          "name": "Wine",
+          "subcategories": [
+            {
+              "name": "Red Wine"
+            },
+            {
+              "name": "White Wine"
+            },
+            {
+              "name": "Ros\u00e9"
+            },
+            {
+              "name": "Sparkling Wine"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB regulates production, labeling, and advertising. Must obtain a basic permit.",
+            "state": "State wine licenses required; adherence to specific state marketing restrictions."
+          },
+          "legal": {
+            "ageRestriction": "21+",
+            "licensing": "Winemakers must secure a winery license from both federal and state authorities.",
+            "labeling": "Labels must display alcohol content, origin, and varietal information per TTB rules."
+          }
+        },
+        {
+          "name": "Spirits",
+          "subcategories": [
+            {
+              "name": "Whiskey"
+            },
+            {
+              "name": "Vodka"
+            },
+            {
+              "name": "Rum"
+            },
+            {
+              "name": "Tequila"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB oversees production, labeling, and distribution. Must register distillery.",
+            "state": "Requires state-specific permits for distillation and sales."
+          },
+          "legal": {
+            "ageRestriction": "21+",
+            "licensing": "Distilleries must obtain a federal distiller's permit and state licenses.",
+            "labeling": "Must include proof of alcohol, origin, and brand information as per TTB."
+          }
+        },
+        {
+          "name": "Cider",
+          "subcategories": [
+            {
+              "name": "Hard Cider"
+            },
+            {
+              "name": "Sparkling Cider"
+            },
+            {
+              "name": "Fruit Flavored Cider"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB regulates production standards and labeling requirements.",
+            "state": "State permits required for production and sales; adherence to local regulations."
+          },
+          "legal": {
+            "ageRestriction": "21+",
+            "licensing": "Cider makers must obtain appropriate federal and state licenses.",
+            "labeling": "Labels must disclose alcohol content and ingredients as per federal law."
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Each beverage type must comply with TTB regulations specific to its category.",
+        "state": "State-level compliance varies; operators must adhere to both federal and state laws."
+      },
+      "legal": {
+        "ageRestriction": "Universal across all types: 21+",
+        "licensing": "Mandatory licenses vary by beverage type and state.",
+        "labeling": "Consistent federal labeling requirements with additional state-specific rules."
+      }
+    },
+    {
+      "name": "Production and Manufacturing",
+      "subcategories": [
+        {
+          "name": "Brewing",
+          "subcategories": [
+            {
+              "name": "Mashing"
+            },
+            {
+              "name": "Boiling"
+            },
+            {
+              "name": "Fermentation"
+            },
+            {
+              "name": "Packaging"
+            }
+          ],
+          "compliance": {
+            "federal": "Must follow FDA and TTB production standards. Proper sanitation and safety protocols required.",
+            "state": "State-specific environmental and safety regulations apply."
+          },
+          "legal": {
+            "licensing": "Breweries need federal permits and state brewing licenses.",
+            "facilityRegulations": "Must adhere to zoning laws and health and safety standards."
+          }
+        },
+        {
+          "name": "Distillation",
+          "subcategories": [
+            {
+              "name": "Fermentation"
+            },
+            {
+              "name": "Distillation Process"
+            },
+            {
+              "name": "Aging"
+            },
+            {
+              "name": "Bottling"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB regulates distillation processes and mandates accurate reporting.",
+            "state": "State permits for distilleries, including environmental and safety compliance."
+          },
+          "legal": {
+            "licensing": "Distilleries must hold federal distiller's permits and state licenses.",
+            "processRegulations": "Strict adherence to approved distillation methods and reporting standards."
+          }
+        },
+        {
+          "name": "Fermentation",
+          "subcategories": [
+            {
+              "name": "Yeast Management"
+            },
+            {
+              "name": "Temperature Control"
+            },
+            {
+              "name": "Sugar Conversion"
+            },
+            {
+              "name": "Alcohol Content Management"
+            }
+          ],
+          "compliance": {
+            "federal": "Must comply with TTB and FDA guidelines on fermentation practices.",
+            "state": "Local health and safety regulations must be followed."
+          },
+          "legal": {
+            "facilityRequirements": "Facilities must meet health codes and safety standards.",
+            "processDocumentation": "Detailed records of fermentation processes must be maintained."
+          }
+        },
+        {
+          "name": "Packaging",
+          "subcategories": [
+            {
+              "name": "Bottling"
+            },
+            {
+              "name": "Canning"
+            },
+            {
+              "name": "Labeling"
+            },
+            {
+              "name": "Boxing and Shipping"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB oversees labeling accuracy and packaging standards.",
+            "state": "Compliance with state packaging and recycling laws."
+          },
+          "legal": {
+            "labeling": "Labels must include required information such as alcohol content and warnings.",
+            "packagingStandards": "Must use approved materials and methods for packaging alcoholic beverages."
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Production processes must meet TTB and FDA regulations.",
+        "state": "Additional state-specific manufacturing and environmental regulations may apply."
+      },
+      "legal": {
+        "licensing": "Mandatory production licenses and permits are required.",
+        "facilityCompliance": "Manufacturing facilities must adhere to zoning, health, and safety laws."
+      }
+    },
+    {
+      "name": "Distribution and Sales Channels",
+      "subcategories": [
+        {
+          "name": "Wholesale",
+          "subcategories": [
+            {
+              "name": "Distributors"
+            },
+            {
+              "name": "Importers"
+            },
+            {
+              "name": "Exporters"
+            },
+            {
+              "name": "Bulk Sales"
+            }
+          ],
+          "compliance": {
+            "federal": "Must comply with TTB regulations for distribution and interstate commerce.",
+            "state": "State distributor licenses required; adherence to state distribution laws."
+          },
+          "legal": {
+            "licensing": "Wholesalers need federal and state distribution licenses.",
+            "contracts": "Must follow legal contracts compliant with state and federal laws."
+          }
+        },
+        {
+          "name": "Retail",
+          "subcategories": [
+            {
+              "name": "Liquor Stores"
+            },
+            {
+              "name": "Bars and Restaurants"
+            },
+            {
+              "name": "Online Retail"
+            },
+            {
+              "name": "Specialty Shops"
+            }
+          ],
+          "compliance": {
+            "federal": "Regulated by TTB for advertising and sales practices.",
+            "state": "State retail licenses required; must follow state-specific sales laws."
+          },
+          "legal": {
+            "licensing": "Retail establishments must obtain appropriate state and local licenses.",
+            "ageVerification": "Mandatory enforcement of 21+ sales age with proper ID verification."
+          }
+        },
+        {
+          "name": "Online Sales",
+          "subcategories": [
+            {
+              "name": "E-commerce Platforms"
+            },
+            {
+              "name": "Subscription Services"
+            },
+            {
+              "name": "Direct-to-Consumer"
+            },
+            {
+              "name": "Shipping Regulations"
+            }
+          ],
+          "compliance": {
+            "federal": "Must adhere to federal shipping laws and TTB e-commerce regulations.",
+            "state": "Compliance with state-specific online sales and shipping restrictions."
+          },
+          "legal": {
+            "licensing": "Online retailers must hold necessary federal and state licenses.",
+            "shippingCompliance": "Ensure shipments comply with both origin and destination state laws."
+          }
+        },
+        {
+          "name": "Import/Export",
+          "subcategories": [
+            {
+              "name": "Import Regulations"
+            },
+            {
+              "name": "Export Regulations"
+            },
+            {
+              "name": "Customs Compliance"
+            },
+            {
+              "name": "Trade Agreements"
+            }
+          ],
+          "compliance": {
+            "federal": "Must comply with TTB, FDA, and Customs and Border Protection (CBP) regulations.",
+            "state": "State-specific import/export requirements may apply."
+          },
+          "legal": {
+            "licensing": "Importers and exporters need federal permits and licenses.",
+            "tradeCompliance": "Adhere to international trade laws and agreements."
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Interstate distribution must follow TTB and federal commerce regulations.",
+        "state": "Each state has specific distribution and retail laws that must be followed."
+      },
+      "legal": {
+        "licensing": "Appropriate distribution and retail licenses are mandatory.",
+        "salesRegulations": "Must enforce age restrictions and adhere to sales laws."
+      }
+    },
+    {
+      "name": "Licensing and Permits",
+      "subcategories": [
+        {
+          "name": "Manufacturer\u2019s License",
+          "subcategories": [
+            {
+              "name": "Brewer's Notice"
+            },
+            {
+              "name": "Winery License"
+            },
+            {
+              "name": "Distiller's Permit"
+            }
+          ],
+          "compliance": {
+            "federal": "Issued by TTB; requires detailed application and adherence to production standards.",
+            "state": "Additional state manufacturing licenses may be required."
+          },
+          "legal": {
+            "renewal": "Licenses must be renewed periodically with compliance checks.",
+            "documentation": "Maintain accurate records as mandated by federal and state laws."
+          }
+        },
+        {
+          "name": "Wholesale License",
+          "subcategories": [
+            {
+              "name": "Distributor License"
+            },
+            {
+              "name": "Importer License"
+            },
+            {
+              "name": "Exporter License"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB regulates wholesale operations; must adhere to interstate commerce laws.",
+            "state": "State-specific wholesale permits are required."
+          },
+          "legal": {
+            "licensing": "Obtain necessary federal and state permits for wholesale activities.",
+            "recordKeeping": "Maintain detailed transaction records for regulatory compliance."
+          }
+        },
+        {
+          "name": "Retail License",
+          "subcategories": [
+            {
+              "name": "Liquor Store License"
+            },
+            {
+              "name": "Bar License"
+            },
+            {
+              "name": "Restaurant License"
+            }
+          ],
+          "compliance": {
+            "federal": "Must comply with TTB advertising and sales regulations.",
+            "state": "State and local retail licenses required with adherence to specific sales laws."
+          },
+          "legal": {
+            "ageVerification": "Implement strict age verification processes.",
+            "operatingHours": "Comply with state-mandated operating hours for alcohol sales."
+          }
+        },
+        {
+          "name": "Import Licenses",
+          "subcategories": [
+            {
+              "name": "Importer of Record"
+            },
+            {
+              "name": "Bonding Requirements"
+            },
+            {
+              "name": "Customs Clearance"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB and CBP regulate import licenses; adherence to import duties and taxes.",
+            "state": "State import permits may be necessary depending on distribution."
+          },
+          "legal": {
+            "licensing": "Secure federal import licenses and comply with international trade laws.",
+            "documentation": "Provide accurate documentation for all imported alcohol products."
+          }
+        },
+        {
+          "name": "Special Permits",
+          "subcategories": [
+            {
+              "name": "Temporary Event Permits"
+            },
+            {
+              "name": "On-Premises Consumption Permits"
+            },
+            {
+              "name": "Special Sales Permits"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB may require specific permits for events or special sales.",
+            "state": "State-specific special permits must be obtained for temporary activities."
+          },
+          "legal": {
+            "eventCompliance": "Ensure all permits are secured before events involving alcohol.",
+            "usageRestrictions": "Adhere to terms and conditions of special permits."
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Licensing overseen by TTB and must comply with federal alcohol laws.",
+        "state": "Each state has its own licensing requirements and renewal processes."
+      },
+      "legal": {
+        "licensingRequirements": "Obtain all necessary licenses and permits to operate legally.",
+        "complianceAudits": "Regular audits and inspections to ensure ongoing compliance."
+      }
+    },
+    {
+      "name": "Regulatory Compliance",
+      "subcategories": [
+        {
+          "name": "Age Restrictions",
+          "subcategories": [
+            {
+              "name": "21 and Over"
+            },
+            {
+              "name": "ID Verification"
+            },
+            {
+              "name": "Underage Penalties"
+            }
+          ],
+          "compliance": {
+            "federal": "Enforce minimum drinking age of 21 as per National Minimum Drinking Age Act.",
+            "state": "States must comply with federal age requirements; some may have stricter rules."
+          },
+          "legal": {
+            "enforcement": "Strict penalties for selling to minors.",
+            "training": "Staff must be trained in age verification procedures."
+          }
+        },
+        {
+          "name": "Taxation",
+          "subcategories": [
+            {
+              "name": "Federal Excise Tax"
+            },
+            {
+              "name": "State Taxes"
+            },
+            {
+              "name": "Local Taxes"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB administers federal excise taxes on alcohol production and sales.",
+            "state": "Each state imposes its own alcohol taxes and reporting requirements."
+          },
+          "legal": {
+            "taxFiling": "Accurate and timely filing of tax returns is mandatory.",
+            "taxRates": "Adhere to current federal and state alcohol tax rates."
+          }
+        },
+        {
+          "name": "Health and Safety Regulations",
+          "subcategories": [
+            {
+              "name": "Sanitation Standards"
+            },
+            {
+              "name": "Product Safety"
+            },
+            {
+              "name": "Workplace Safety"
+            }
+          ],
+          "compliance": {
+            "federal": "FDA regulates health standards for alcoholic beverages; OSHA oversees workplace safety.",
+            "state": "State health departments enforce additional safety regulations."
+          },
+          "legal": {
+            "complianceAudits": "Regular inspections to ensure adherence to health and safety laws.",
+            "recordKeeping": "Maintain records of safety protocols and compliance measures."
+          }
+        },
+        {
+          "name": "Environmental Regulations",
+          "subcategories": [
+            {
+              "name": "Waste Management"
+            },
+            {
+              "name": "Emissions Control"
+            },
+            {
+              "name": "Water Usage"
+            }
+          ],
+          "compliance": {
+            "federal": "Environmental Protection Agency (EPA) regulates waste and emissions.",
+            "state": "State environmental agencies may have additional requirements."
+          },
+          "legal": {
+            "permits": "Obtain necessary environmental permits.",
+            "sustainabilityPractices": "Implement practices to minimize environmental impact."
+          }
+        },
+        {
+          "name": "Record-Keeping",
+          "subcategories": [
+            {
+              "name": "Production Records"
+            },
+            {
+              "name": "Sales Records"
+            },
+            {
+              "name": "Tax Records"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB requires detailed records of production, distribution, and sales.",
+            "state": "States may have additional record-keeping requirements."
+          },
+          "legal": {
+            "dataRetention": "Maintain records for the duration required by federal and state laws.",
+            "auditCompliance": "Ensure records are accessible and accurate for potential audits."
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Adherence to TTB, FDA, OSHA, and EPA regulations is mandatory.",
+        "state": "State-specific compliance requirements must be met in addition to federal laws."
+      },
+      "legal": {
+        "regulatoryAdherence": "Ensure all regulatory standards are consistently met.",
+        "penalties": "Be aware of and avoid penalties associated with non-compliance."
+      }
+    },
+    {
+      "name": "Marketing and Advertising",
+      "subcategories": [
+        {
+          "name": "Branding",
+          "subcategories": [
+            {
+              "name": "Logo Design"
+            },
+            {
+              "name": "Packaging Design"
+            },
+            {
+              "name": "Brand Messaging"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB governs labeling content and branding must adhere to advertising laws.",
+            "state": "State may have additional restrictions on branding and marketing materials."
+          },
+          "legal": {
+            "trademark": "Register trademarks to protect brand identity.",
+            "intellectualProperty": "Ensure all branding elements do not infringe on existing IP."
+          }
+        },
+        {
+          "name": "Promotions",
+          "subcategories": [
+            {
+              "name": "Discounts"
+            },
+            {
+              "name": "Contests"
+            },
+            {
+              "name": "Sampling"
+            },
+            {
+              "name": "Loyalty Programs"
+            }
+          ],
+          "compliance": {
+            "federal": "Promotions must comply with TTB regulations regarding advertising and sales tactics.",
+            "state": "State-specific rules may apply to certain promotional activities."
+          },
+          "legal": {
+            "compliance": "Ensure promotions do not encourage excessive drinking or target minors.",
+            "permits": "Obtain necessary permits for large-scale promotions or events."
+          }
+        },
+        {
+          "name": "Social Media",
+          "subcategories": [
+            {
+              "name": "Content Creation"
+            },
+            {
+              "name": "Influencer Partnerships"
+            },
+            {
+              "name": "Advertising Campaigns"
+            }
+          ],
+          "compliance": {
+            "federal": "Must adhere to Federal Trade Commission (FTC) guidelines on advertising and endorsements.",
+            "state": "State laws may regulate content and advertising practices on social platforms."
+          },
+          "legal": {
+            "disclosures": "Properly disclose sponsored content and partnerships.",
+            "ageRestrictions": "Ensure content is not accessible to underage audiences."
+          }
+        },
+        {
+          "name": "Sponsorships",
+          "subcategories": [
+            {
+              "name": "Events"
+            },
+            {
+              "name": "Sports Teams"
+            },
+            {
+              "name": "Cultural Events"
+            }
+          ],
+          "compliance": {
+            "federal": "Sponsorships must comply with TTB advertising regulations.",
+            "state": "State laws may affect sponsorship deals and permissible activities."
+          },
+          "legal": {
+            "contracts": "Draft clear contracts outlining terms of sponsorship.",
+            "compliance": "Ensure sponsored events adhere to all legal and regulatory standards."
+          }
+        },
+        {
+          "name": "Labeling Requirements",
+          "subcategories": [
+            {
+              "name": "Ingredient Listing"
+            },
+            {
+              "name": "Alcohol Content"
+            },
+            {
+              "name": "Health Warnings"
+            },
+            {
+              "name": "Nutritional Information"
+            }
+          ],
+          "compliance": {
+            "federal": "TTB mandates specific labeling information for all alcoholic beverages.",
+            "state": "Some states may have additional labeling requirements."
+          },
+          "legal": {
+            "accuracy": "All label information must be accurate and truthful.",
+            "complianceAudits": "Regularly review labels to ensure ongoing compliance with regulations."
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Must follow TTB and FTC regulations for all marketing and advertising efforts.",
+        "state": "State-specific marketing laws and advertising restrictions must be observed."
+      },
+      "legal": {
+        "advertisingStandards": "Ensure all advertisements are truthful and not misleading.",
+        "ageCompliance": "All marketing materials must prevent targeting underage individuals."
+      }
+    }
+  ],
+  "compliance": {
+    "federal": "Overarching compliance with TTB, FDA, OSHA, EPA, and FTC regulations is required.",
+    "state": "Adhere to all relevant state laws and regulations in addition to federal requirements."
+  },
+  "legal": {
+    "overallRequirements": "Ensure all aspects of the business comply with federal and state alcohol laws.",
+    "riskManagement": "Implement strategies to mitigate legal risks, including regular audits and legal consultations."
+  },
+  "metadata": {
+    "generated_at": "2025-04-08T19:34:48.379806",
+    "model": "o1-mini",
+    "max_depth": 4,
+    "breadth_limit": 10,
+    "strategy": "parallel",
+    "jurisdictions": [
+      "USA"
+    ]
+  }
+}

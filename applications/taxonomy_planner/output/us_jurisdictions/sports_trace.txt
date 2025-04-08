@@ -1,0 +1,7 @@
+Taxonomy generation trace for Sports
+Generated at: 2025-04-08T19:42:34.120485
+Model: o1-mini
+Jurisdictions: USA
+Output: output/us_jurisdictions/sports_taxonomy.json
+Trace file: traces/taxonomy_generation/trace_8bc8e32d-c063-47da-867f-c8560ec2a8cc.jsonl
+Session ID: 8bc8e32d-c063-47da-867f-c8560ec2a8cc

@@ -14,7 +14,8 @@ from symphony.core.agent_factory import AgentFactory
 from symphony.core.task_manager import TaskManager
 from symphony.execution.enhanced_agent import EnhancedExecutor
 from symphony.execution.router import TaskRouter
-from symphony.orchestration.workflow_definition import WorkflowStep, StepResult, WorkflowContext
+from symphony.orchestration.workflow_definition import StepResult, WorkflowContext
+from symphony.orchestration.workflow_definition import WorkflowStep
 
 
 class TaskStep(WorkflowStep):

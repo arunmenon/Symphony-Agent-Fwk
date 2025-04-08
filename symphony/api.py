@@ -27,6 +27,13 @@ from symphony.builder.task_builder import TaskBuilder
 from symphony.builder.workflow_builder import WorkflowBuilder
 from symphony.patterns.builder import PatternBuilder
 
+# Import state management components
+from symphony.core.state import (
+    CheckpointManager,
+    FileStorageProvider,
+    CheckpointError
+)
+
 
 class Symphony:
     """Main Symphony API class.
@@ -36,11 +43,12 @@ class Symphony:
     fluent interfaces for building complex objects.
     """
     
-    def __init__(self, config: SymphonyConfig = None):
+    def __init__(self, config: SymphonyConfig = None, persistence_enabled: bool = False):
         """Initialize Symphony API.
         
         Args:
             config: Symphony configuration (optional)
+            persistence_enabled: Enable state persistence (default: False)
         """
         # Use default config if none provided
         if config is None:
@@ -49,19 +57,31 @@ class Symphony:
         self.config = config
         self.registry = ServiceRegistry.get_instance()
         
+        # State management
+        self._persistence_enabled = persistence_enabled
+        self._state_storage = None
+        self._checkpoint_manager = None
+        
         # Lazily initialized facades and builders
         self._agent_facade = None
         self._task_facade = None
         self._workflow_facade = None
         self._patterns_facade = None
     
-    async def setup(self, persistence_type: str = "memory", base_dir: str = "./data", with_patterns: bool = True):
+    async def setup(
+        self, 
+        persistence_type: str = "memory", 
+        base_dir: str = "./data", 
+        with_patterns: bool = True,
+        state_dir: Optional[str] = None
+    ):
         """Set up Symphony API with basic components.
         
         Args:
             persistence_type: Type of persistence ("memory" or "file")
             base_dir: Base directory for file storage (only used with "file" persistence)
             with_patterns: Whether to register patterns library (default: True)
+            state_dir: Directory for state storage (default: "{base_dir}/state")
         """
         # Get persistence type from config if not provided
         if persistence_type is None:
@@ -96,12 +116,26 @@ class Symphony:
         
         # Register orchestration components
         from symphony.orchestration import register_orchestration_components
-        register_orchestration_components(self.registry)
+        register_orchestration_components(self.registry, symphony_instance=self)
         
         # Register patterns if requested
         if with_patterns:
             from symphony.patterns import register_patterns
             register_patterns(self.registry)
+        
+        # Initialize state management if enabled
+        if self._persistence_enabled:
+            # Determine state directory
+            if state_dir is None:
+                state_dir = os.path.join(os.path.dirname(storage_path), "state")
+            
+            # Create storage provider and checkpoint manager
+            self._state_storage = FileStorageProvider(state_dir)
+            self._checkpoint_manager = CheckpointManager(self._state_storage)
+            
+            # Register in registry for components to access
+            self.registry.register_service("state_storage", self._state_storage)
+            self.registry.register_service("checkpoint_manager", self._checkpoint_manager)
         
         return self
     
@@ -191,3 +225,110 @@ class Symphony:
             Service registry
         """
         return self.registry
+        
+    # State management methods
+    
+    async def create_checkpoint(self, name: Optional[str] = None) -> str:
+        """Create a checkpoint of the current Symphony state.
+        
+        This method captures the state of all active agents, memories, workflows,
+        and tasks, allowing them to be restored later. Checkpoints are identified
+        by a unique ID.
+        
+        Args:
+            name: Optional name for the checkpoint
+            
+        Returns:
+            Checkpoint ID
+            
+        Raises:
+            RuntimeError: If persistence is not enabled
+            CheckpointError: If checkpoint creation fails
+        """
+        if not self._persistence_enabled or not self._checkpoint_manager:
+            raise RuntimeError("State persistence not enabled. Initialize Symphony with persistence_enabled=True.")
+        
+        return await self._checkpoint_manager.create_checkpoint(self, name)
+    
+    async def resume_from_checkpoint(self, checkpoint_id: str) -> None:
+        """Resume Symphony state from a checkpoint.
+        
+        This method restores all agents, memories, workflows, and tasks from
+        the specified checkpoint. Current state will be discarded.
+        
+        Args:
+            checkpoint_id: Checkpoint ID to restore from
+            
+        Raises:
+            RuntimeError: If persistence is not enabled
+            CheckpointError: If checkpoint not found or restoration fails
+        """
+        if not self._persistence_enabled or not self._checkpoint_manager:
+            raise RuntimeError("State persistence not enabled. Initialize Symphony with persistence_enabled=True.")
+        
+        return await self._checkpoint_manager.restore_checkpoint(self, checkpoint_id)
+    
+    async def resume_latest_checkpoint(self) -> Optional[str]:
+        """Resume Symphony state from the latest checkpoint.
+        
+        This method restores all agents, memories, workflows, and tasks from
+        the most recent checkpoint. Current state will be discarded.
+        
+        Returns:
+            Checkpoint ID if restored, None if no checkpoints exist
+            
+        Raises:
+            RuntimeError: If persistence is not enabled
+            CheckpointError: If restoration fails
+        """
+        if not self._persistence_enabled or not self._checkpoint_manager:
+            raise RuntimeError("State persistence not enabled. Initialize Symphony with persistence_enabled=True.")
+        
+        # Get latest checkpoint
+        checkpoint = await self._checkpoint_manager.get_latest_checkpoint()
+        if not checkpoint:
+            return None
+        
+        # Restore from checkpoint
+        await self._checkpoint_manager.restore_checkpoint(self, checkpoint.checkpoint_id)
+        return checkpoint.checkpoint_id
+    
+    async def list_checkpoints(self) -> List[Dict[str, Any]]:
+        """List all available checkpoints.
+        
+        Returns:
+            List of checkpoints with their metadata
+            
+        Raises:
+            RuntimeError: If persistence is not enabled
+        """
+        if not self._persistence_enabled or not self._checkpoint_manager:
+            raise RuntimeError("State persistence not enabled. Initialize Symphony with persistence_enabled=True.")
+        
+        checkpoints = await self._checkpoint_manager.list_checkpoints()
+        return [
+            {
+                "id": checkpoint.checkpoint_id,
+                "name": checkpoint.name,
+                "created_at": checkpoint.created_at,
+                "entity_count": len(checkpoint.entities)
+            }
+            for checkpoint in checkpoints
+        ]
+    
+    async def delete_checkpoint(self, checkpoint_id: str) -> bool:
+        """Delete a checkpoint.
+        
+        Args:
+            checkpoint_id: Checkpoint ID to delete
+            
+        Returns:
+            True if deleted, False if checkpoint not found
+            
+        Raises:
+            RuntimeError: If persistence is not enabled
+        """
+        if not self._persistence_enabled or not self._checkpoint_manager:
+            raise RuntimeError("State persistence not enabled. Initialize Symphony with persistence_enabled=True.")
+        
+        return await self._checkpoint_manager.delete_checkpoint(checkpoint_id)

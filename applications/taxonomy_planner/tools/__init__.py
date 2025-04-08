@@ -22,29 +22,28 @@ def register_tools(symphony: Symphony, config: TaxonomyConfig) -> None:
         symphony: Symphony instance
         config: Taxonomy configuration
     """
-    # Register knowledge base tools
-    symphony.register_tool("search_knowledge_base", search_knowledge_base)
-    symphony.register_tool("domain_knowledge_lookup", domain_knowledge_lookup)
+    # Register tools by adding functions to Symphony's tool registry
+    # Since Symphony doesn't have a direct register_tool method, we'll add tools 
+    # to Symphony's tool registry via the agents that need them
     
-    # Register compliance tools
-    symphony.register_tool("get_compliance_requirements", get_compliance_requirements)
+    # Create a dictionary of tools
+    tools = {
+        "search_knowledge_base": search_knowledge_base,
+        "domain_knowledge_lookup": domain_knowledge_lookup,
+        "get_compliance_requirements": get_compliance_requirements,
+        "get_applicable_laws": get_applicable_laws,
+        "search_category_info": lambda category, domain="": search_category_info(
+            category, domain, config=config),
+        "search_subcategories": lambda category: search_subcategories(
+            category, config=config),
+        "search_compliance_requirements": lambda category, jurisdiction="": search_compliance_requirements(
+            category, jurisdiction, config=config),
+        "search_legal_requirements": lambda category, jurisdiction: search_legal_requirements(
+            category, jurisdiction, config=config)
+    }
     
-    # Register legal tools
-    symphony.register_tool("get_applicable_laws", get_applicable_laws)
+    # Store tools in the Symphony instance for later use by agents
+    if not hasattr(symphony, "_custom_tools"):
+        symphony._custom_tools = {}
     
-    # Register search tools
-    symphony.register_tool("search_category_info", 
-                          lambda category, domain="": search_category_info(
-                              category, domain, config=config))
-    
-    symphony.register_tool("search_subcategories", 
-                          lambda category: search_subcategories(
-                              category, config=config))
-    
-    symphony.register_tool("search_compliance_requirements", 
-                          lambda category, jurisdiction="": search_compliance_requirements(
-                              category, jurisdiction, config=config))
-    
-    symphony.register_tool("search_legal_requirements", 
-                          lambda category, jurisdiction: search_legal_requirements(
-                              category, jurisdiction, config=config))
+    symphony._custom_tools.update(tools)

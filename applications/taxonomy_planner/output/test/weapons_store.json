@@ -1,0 +1,81 @@
+{
+  "nodes": {
+    "Weapons": {},
+    "Firearms": {},
+    "Bladed Weapons": {},
+    "Explosives": {},
+    "Handguns": {},
+    "Rifles": {},
+    "Shotguns": {},
+    "Knives": {},
+    "Swords": {},
+    "Grenades": {},
+    "Mines": {}
+  },
+  "edges": {
+    "Weapons": [
+      "Firearms",
+      "Bladed Weapons",
+      "Explosives"
+    ],
+    "Firearms": [
+      "Handguns",
+      "Rifles",
+      "Shotguns"
+    ],
+    "Bladed Weapons": [
+      "Knives",
+      "Swords"
+    ],
+    "Explosives": [
+      "Grenades",
+      "Mines"
+    ],
+    "Handguns": [],
+    "Rifles": [],
+    "Shotguns": [],
+    "Knives": [],
+    "Swords": [],
+    "Grenades": [],
+    "Mines": []
+  },
+  "parents": {
+    "Firearms": "Weapons",
+    "Bladed Weapons": "Weapons",
+    "Explosives": "Weapons",
+    "Handguns": "Firearms",
+    "Rifles": "Firearms",
+    "Shotguns": "Firearms",
+    "Knives": "Bladed Weapons",
+    "Swords": "Bladed Weapons",
+    "Grenades": "Explosives",
+    "Mines": "Explosives"
+  },
+  "compliance_mappings": {
+    "Firearms": {
+      "USA": {
+        "regulations": [
+          "ATF Regulations",
+          "NFA Restrictions"
+        ],
+        "standards": [
+          "BATFE Standards"
+        ]
+      }
+    }
+  },
+  "legal_mappings": {
+    "Firearms": {
+      "USA": {
+        "laws": [
+          "Second Amendment",
+          "Gun Control Act of 1968"
+        ],
+        "restrictions": [
+          "State and local laws vary"
+        ]
+      }
+    }
+  },
+  "last_updated": 1744120312.948597
+}

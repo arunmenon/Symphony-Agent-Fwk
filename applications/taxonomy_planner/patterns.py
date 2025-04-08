@@ -4,14 +4,12 @@ import asyncio
 from typing import Dict, Any, List, Optional, Callable, Set, Tuple
 
 from symphony import Symphony
-from symphony.patterns import (
-    Pattern, 
-    ChainOfThoughtPattern,
-    RecursiveToolUsePattern,
-    ExpertPanelPattern,
-    VerifyExecutePattern,
-    ReflectionPattern
-)
+from symphony.patterns.base import Pattern
+from symphony.patterns.reasoning.chain_of_thought import ChainOfThoughtPattern
+from symphony.patterns.tool_usage.recursive_tool_use import RecursiveToolUsePattern
+from symphony.patterns.multi_agent.expert_panel import ExpertPanelPattern
+from symphony.patterns.tool_usage.verify_execute import VerifyExecutePattern
+from symphony.patterns.learning.reflection import ReflectionPattern
 
 class SearchEnhancedExplorationPattern(RecursiveToolUsePattern):
     """Pattern for taxonomy exploration enhanced with search capabilities.
@@ -22,6 +20,10 @@ class SearchEnhancedExplorationPattern(RecursiveToolUsePattern):
     3. Support for different exploration strategies
     4. Incremental persistence using TaxonomyStore
     """
+    
+    def __init__(self, config):
+        """Initialize the pattern with config."""
+        super().__init__(config)
     
     @property
     def name(self) -> str:
@@ -226,13 +228,51 @@ class SearchEnhancedExplorationPattern(RecursiveToolUsePattern):
 
 def create_patterns() -> Dict[str, Pattern]:
     """Create patterns for taxonomy generation."""
+    # Create base configurations for each pattern
+    chain_of_thought_config = {
+        "name": "chain_of_thought",
+        "description": "Sequential reasoning with explicit intermediate steps",
+        "max_iterations": 5
+    }
+    
+    recursive_exploration_config = {
+        "name": "recursive_exploration",
+        "description": "Recursively explore a hierarchy",
+        "max_iterations": 10
+    }
+    
+    search_enhanced_config = {
+        "name": "search_enhanced_exploration",
+        "description": "Explores taxonomy using both knowledge base and search results with optimized strategies",
+        "max_iterations": 10
+    }
+    
+    expert_panel_config = {
+        "name": "expert_panel",
+        "description": "Multiple experts collaborating on a solution",
+        "max_iterations": 3
+    }
+    
+    verify_execute_config = {
+        "name": "verify_execute",
+        "description": "Verify a plan before execution",
+        "max_iterations": 2
+    }
+    
+    reflection_config = {
+        "name": "reflection",
+        "description": "Reflect on previous decisions",
+        "max_iterations": 2
+    }
+    
+    # Create pattern instances with configurations
     patterns = {
-        "chain_of_thought": ChainOfThoughtPattern(),
-        "recursive_exploration": RecursiveToolUsePattern(),
-        "search_enhanced_exploration": SearchEnhancedExplorationPattern(),
-        "expert_panel": ExpertPanelPattern(),
-        "verify_execute": VerifyExecutePattern(),
-        "reflection": ReflectionPattern(),
+        "chain_of_thought": ChainOfThoughtPattern(chain_of_thought_config),
+        "recursive_exploration": RecursiveToolUsePattern(recursive_exploration_config),
+        "search_enhanced_exploration": SearchEnhancedExplorationPattern(search_enhanced_config),
+        "expert_panel": ExpertPanelPattern(expert_panel_config),
+        "verify_execute": VerifyExecutePattern(verify_execute_config),
+        "reflection": ReflectionPattern(reflection_config),
     }
     
     return patterns

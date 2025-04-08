@@ -4,6 +4,13 @@ This module provides components for tracking the execution of workflows,
 including individual tasks, agent activities, and overall workflow status.
 """
 
+# Try importing state management tools conditionally
+try:
+    from symphony.core.state import EntityRestorer, RestorationContext, register_entity_restorer
+    STATE_MANAGEMENT_AVAILABLE = True
+except ImportError:
+    STATE_MANAGEMENT_AVAILABLE = False
+
 import uuid
 from datetime import datetime
 from enum import Enum
@@ -77,6 +84,29 @@ class Workflow(BaseModel):
         """Add a task to the workflow."""
         if task_id not in self.task_ids:
             self.task_ids.append(task_id)
+            
+    def get_state_data(self) -> Dict[str, Any]:
+        """Get state data for workflow.
+        
+        This method is used by the state management system to serialize the workflow.
+        
+        Returns:
+            State data for serialization
+        """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "task_ids": self.task_ids,
+            "parent_workflow_id": self.parent_workflow_id,
+            "tags": self.tags,
+            "metadata": self.metadata,
+            "error": self.error
+        }
 
 
 class WorkflowTracker:
@@ -257,3 +287,66 @@ class WorkflowTracker:
         """
         status = await self.compute_workflow_status(workflow_id)
         return await self.update_workflow_status(workflow_id, status)
+
+
+# Add Workflow restorer if state management is available
+if STATE_MANAGEMENT_AVAILABLE:
+    class WorkflowRestorer(EntityRestorer):
+        """Restorer for Workflow entities."""
+        
+        @property
+        def entity_type(self) -> str:
+            return "Workflow"
+        
+        async def restore(self, entity_id: str, data: Dict[str, Any], context: RestorationContext) -> Any:
+            """Restore a workflow from serialized state."""
+            try:
+                # Parse datetime fields
+                created_at = None
+                if data.get("created_at"):
+                    try:
+                        created_at = datetime.fromisoformat(data["created_at"])
+                    except ValueError:
+                        created_at = datetime.now()
+                
+                started_at = None
+                if data.get("started_at"):
+                    try:
+                        started_at = datetime.fromisoformat(data["started_at"])
+                    except ValueError:
+                        started_at = None
+                
+                completed_at = None
+                if data.get("completed_at"):
+                    try:
+                        completed_at = datetime.fromisoformat(data["completed_at"])
+                    except ValueError:
+                        completed_at = None
+                
+                # Create workflow
+                workflow = Workflow(
+                    id=entity_id,
+                    name=data.get("name", "Restored Workflow"),
+                    description=data.get("description", ""),
+                    status=data.get("status", WorkflowStatus.PENDING),
+                    created_at=created_at or datetime.now(),
+                    started_at=started_at,
+                    completed_at=completed_at,
+                    task_ids=data.get("task_ids", []),
+                    parent_workflow_id=data.get("parent_workflow_id"),
+                    tags=data.get("tags", []),
+                    metadata=data.get("metadata", {}),
+                    error=data.get("error")
+                )
+                
+                # Register with context
+                context.register_entity("Workflow", entity_id, workflow)
+                
+                return workflow
+                
+            except Exception as e:
+                print(f"Failed to restore Workflow {entity_id}: {e}")
+                return None
+    
+    # Register the restorer
+    register_entity_restorer(WorkflowRestorer())
