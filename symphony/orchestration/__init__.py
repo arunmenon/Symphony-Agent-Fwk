@@ -27,17 +27,23 @@ from symphony.core.registry import ServiceRegistry
 
 def register_orchestration_components(
     registry: ServiceRegistry,
-    workflow_definition_repository=None
+    workflow_definition_repository=None,
+    symphony_instance=None
 ) -> None:
     """Register orchestration components in the service registry.
     
     Args:
         registry: Service registry to update
         workflow_definition_repository: Optional repository for workflow definitions
+        symphony_instance: Optional Symphony instance for state management
     """
     # Register workflow definition repository if provided
     if workflow_definition_repository:
         registry.register_repository("workflow_definition", workflow_definition_repository)
+    
+    # Register Symphony instance if provided (needed for state management)
+    if symphony_instance:
+        registry.register_service("symphony_instance", symphony_instance)
     
     # Check if required repositories exist
     try:

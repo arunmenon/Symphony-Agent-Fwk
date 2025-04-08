@@ -13,6 +13,7 @@ Key features include:
 - Depth-first recursive exploration of taxonomy branches
 - Custom patterns for efficient taxonomy generation
 - Configurable taxonomy parameters (depth, breadth, domains)
+- LLM call tracing with performance metrics and analysis tools
 
 ## Architecture
 
@@ -21,6 +22,7 @@ The application uses a modular architecture with the following components:
 - **Core Components**
   - `TaxonomyPlanner`: Main orchestration class
   - `TaxonomyConfig`: Configuration management
+  - `TaxonomyStore`: Efficient adjacency list-based persistence
   
 - **Specialized Agents**
   - Planner Agent: Coordinates the overall taxonomy structure
@@ -30,16 +32,63 @@ The application uses a modular architecture with the following components:
 
 - **Custom Patterns**
   - SearchEnhancedExplorationPattern: Combines knowledge-based and search-based exploration
+  - ParallelExplorationPattern: Parallel processing of taxonomy branches
+  - BreadthLimitedExploration: Controls taxonomy breadth to prevent explosive growth
 
 - **Tools**
   - Knowledge Base Tools: Internal domain knowledge
   - Search Tools: SerAPI integration for web search
   - Compliance Tools: Regulatory requirement mapping
   - Legal Tools: Legal mapping tools
+  
+- **Tracing and Analysis**
+  - LLMTracingPlugin: Symphony plugin for tracing model calls
+  - TraceAnalyzer: Visualization and metrics for model performance
 
 ## Usage
 
-### Basic Usage
+### Using the Command Line Script
+
+The easiest way to generate taxonomies is to use the provided command-line script:
+
+```bash
+# Generate a US compliance taxonomy for "Nudity"
+./generate_us_taxonomies.sh "Nudity"
+
+# Generate for other categories
+./generate_us_taxonomies.sh "Alcohol"
+./generate_us_taxonomies.sh "Weapons"
+
+# Generate multiple taxonomies in one go
+./generate_multiple.sh "Sports,Finance,Technology"
+
+# Run full pipeline (generation, analysis, visualization)
+./run_pipeline.sh "Sports,Finance,Technology"
+```
+
+### Custom Parameters with Python Script
+
+For more control, you can use the Python script directly:
+
+```bash
+# Basic usage
+python generate_taxonomy.py "Nudity"
+
+# Custom parameters
+python generate_taxonomy.py "Alcohol" \
+    --jurisdictions "USA,EU,UK" \
+    --output-dir "custom_output" \
+    --storage-dir "custom_storage" \
+    --max-depth 5 \
+    --breadth-limit 15 \
+    --strategy "breadth_first" \
+    --planner-model "gpt-4o" \
+    --explorer-model "gpt-4-turbo" \
+    --compliance-model "gpt-4o" \
+    --legal-model "gpt-4o"
+```
+
+### Programmatic Usage
 
 ```python
 import asyncio
@@ -165,7 +214,84 @@ The Taxonomy Planner can be enhanced with real web search capabilities using the
    config.search_config["enable_search"] = True
    ```
 
+The provided `generate_us_taxonomies.sh` script already includes the API key for SerpAPI and OpenAI for convenience.
+
 Without an API key, the application will use mock search results for demonstration purposes.
+
+## Visualizing Taxonomies
+
+The Taxonomy Planner includes visualization tools that create interactive HTML tree views:
+
+```bash
+# Visualize a single taxonomy
+python visualize_taxonomy.py output/us_jurisdictions/sports_taxonomy.json
+
+# Specify a custom output file
+python visualize_taxonomy.py output/us_jurisdictions/sports_taxonomy.json --output custom_visualization.html
+
+# Visualize all taxonomies in a directory
+python visualize_all.py --input-dir output/us_jurisdictions
+
+# Visualize taxonomies matching a pattern
+python visualize_all.py --input-dir output --pattern "*_taxonomy.json"
+```
+
+The visualization provides:
+- Interactive expandable/collapsible tree view
+- Search functionality to find categories
+- Compliance and legal information display
+- Metadata summary
+- Index page with links to all visualizations
+
+## LLM Tracing and Analysis
+
+The Taxonomy Planner includes a comprehensive tracing system to monitor and analyze LLM calls:
+
+### Trace Generation
+
+Tracing is automatically enabled when generating taxonomies:
+
+```bash
+# Generate taxonomy with tracing enabled (built-in)
+./generate_us_taxonomies.sh "Sports"
+```
+
+This creates trace files in the `traces/taxonomy_generation/` directory with full request/response information.
+
+### Analyzing Traces
+
+Use the trace analysis tool to generate insights and visualizations:
+
+```bash
+# Analyze a trace file
+python analyze_traces.py traces/taxonomy_generation/trace_*.jsonl
+
+# Specify custom output directory
+python analyze_traces.py traces/taxonomy_generation/trace_*.jsonl --output-dir "analysis/sports"
+```
+
+The analysis includes:
+- Request/response statistics
+- Response time distributions
+- Model usage metrics
+- Visualization of performance data
+
+### Customizing Tracing
+
+You can customize the tracing behavior in your code:
+
+```python
+from llm_tracing_plugin import LLMTracingPlugin
+
+# Create a custom tracer
+tracer = LLMTracingPlugin(trace_dir="custom_traces")
+
+# Use the trace decorator
+@tracer.trace_model_call
+async def custom_model_call(model, prompt):
+    # Your model call code here
+    pass
+```
 
 ## Example Applications
 
@@ -176,6 +302,7 @@ The Taxonomy Planner can be used for various applications:
 - **Content Organization**: Build content taxonomies for websites or documentation
 - **Product Categorization**: Develop e-commerce product hierarchies
 - **Legal Research**: Map legal requirements across different jurisdictions
+- **Model Performance Analysis**: Analyze LLM performance across different models and tasks
 
 ## Extending the Application
 
@@ -197,3 +324,12 @@ You can extend the Taxonomy Planner in several ways:
 5. **Integrate with External Systems**:
    - Connect to databases or knowledge management systems
    - Integrate with commercial taxonomies or ontologies
+   
+6. **Extend Tracing Capabilities**:
+   - Add support for additional metrics and visualizations
+   - Integrate with monitoring systems for real-time insights
+   
+7. **Enhance Visualization Tools**:
+   - Add interactive comparisons between taxonomies
+   - Create dashboards for model performance metrics
+   - Support exporting to other formats (PDF, SVG)

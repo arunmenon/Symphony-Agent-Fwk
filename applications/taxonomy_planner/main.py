@@ -72,121 +72,128 @@ class TaxonomyPlanner:
         workflow_builder = self.symphony.build_workflow()
         
         # Start building the workflow
-        workflow = (workflow_builder
-            .name("Taxonomy Generation Workflow")
-            .description("Workflow for generating hierarchical taxonomies with compliance and legal mappings")
-            # Planning step
-            .add_step(
-                self.symphony.build_step()
-                .name("Planning")
-                .description("Plan the taxonomy structure")
-                .agent(self.agents["planner"])
-                .task("Create a comprehensive taxonomy for {{root_category}}. Include main subcategories, important distinctions, and organization principles. Focus on creating a well-structured hierarchical taxonomy that could be further expanded.")
-                .pattern(self.patterns["chain_of_thought"])
-                .output_key("plan")
-                .build()
-            )
-            # NEW: Plan processing step
-            .add_step(
-                self.symphony.build_step()
-                .name("PlanProcessing")
-                .description("Process planner output and initialize taxonomy")
-                .processing_function(self._process_plan)
-                .context_data({
-                    "plan": "{{plan}}",
-                    "root_category": "{{root_category}}",
-                    "store": self.store
-                })
-                .output_key("initial_categories")
-                .build()
-            )
-            # Exploration step (updated to use store)
-            .add_step(
-                self.symphony.build_step()
-                .name("Exploration")
-                .description("Explore the taxonomy tree")
-                .agent(self.agents["explorer"])
-                .task("Explore the taxonomy tree for {{root_category}} with initial categories: {{initial_categories}}")
-                .pattern(self.patterns["search_enhanced_exploration"])
-                .context_data({
-                    "category": "{{root_category}}",
-                    "parent": None,
-                    "store": self.store,
-                    "agent": self.agents["explorer"],
-                    "tools": ["search_knowledge_base", "search_subcategories", "search_category_info"],
-                    "max_depth": "{{max_depth}}",
-                    "breadth_limit": "{{breadth_limit}}",
-                    "strategy": "{{strategy}}",
-                    "initial_categories": "{{initial_categories}}"
-                })
-                .output_key("exploration_result")
-                .build()
-            )
-            # Compliance mapping step (updated to use store)
-            .add_step(
-                self.symphony.build_step()
-                .name("ComplianceMapping")
-                .description("Map compliance requirements to taxonomy")
-                .agent(self.agents["compliance"])
-                .task("Map compliance requirements for all categories")
-                .pattern(self.patterns["verify_execute"])
-                .context_data({
-                    "categories": self.store.get_all_nodes,
-                    "jurisdictions": "{{jurisdictions}}",
-                    "store": self.store,
-                    "tools": ["get_compliance_requirements", "search_compliance_requirements"]
-                })
-                .output_key("compliance_results")
-                .build()
-            )
-            # Legal mapping step (updated to use store)
-            .add_step(
-                self.symphony.build_step()
-                .name("LegalMapping")
-                .description("Map legal requirements to taxonomy")
-                .agent(self.agents["legal"])
-                .task("Map legal requirements for all categories")
-                .pattern(self.patterns["verify_execute"])
-                .context_data({
-                    "categories": self.store.get_all_nodes,
-                    "jurisdictions": "{{jurisdictions}}",
-                    "store": self.store,
-                    "tools": ["get_applicable_laws", "search_legal_requirements"]
-                })
-                .output_key("legal_results")
-                .build()
-            )
-            # Tree building step (using processing step instead of agent step)
-            .add_step(
-                self.symphony.build_step()
-                .name("TreeBuilding")
-                .description("Build final taxonomy tree")
-                .processing_function(self._build_taxonomy_tree)
-                .context_data({
-                    "root_category": "{{root_category}}",
-                    "compliance_results": "{{compliance_results}}",
-                    "legal_results": "{{legal_results}}",
-                    "store": self.store
-                })
-                .output_key("taxonomy")
-                .build()
-            )
-            # Output step (using processing step)
-            .add_step(
-                self.symphony.build_step()
-                .name("SaveOutput")
-                .description("Save taxonomy to output file if path provided")
-                .processing_function(self._save_taxonomy)
-                .context_data({
-                    "taxonomy": "{{taxonomy}}",
-                    "output_path": "{{output_path}}"
-                })
-                .build()
-            )
-            .build()
+        workflow_builder.create(
+            name="Taxonomy Generation Workflow",
+            description="Workflow for generating hierarchical taxonomies with compliance and legal mappings"
         )
         
-        self.workflow_definition = workflow
+        # Planning step
+        planning_step = (workflow_builder.build_step()
+            .name("Planning")
+            .description("Plan the taxonomy structure")
+            .agent(self.agents["planner"])
+            .task("Create a comprehensive taxonomy for {{root_category}}. Include main subcategories, important distinctions, and organization principles. Focus on creating a well-structured hierarchical taxonomy that could be further expanded.")
+            .pattern(self.patterns["chain_of_thought"])
+            .output_key("plan")
+            .build()
+        )
+        workflow_builder.add_step(planning_step)
+        
+        # NEW: Plan processing step
+        plan_processing_step = (workflow_builder.build_step()
+            .name("PlanProcessing")
+            .description("Process planner output and initialize taxonomy")
+            .processing_function(self._process_plan)
+            .context_data({
+                "plan": "{{plan}}",
+                "root_category": "{{root_category}}",
+                "store": self.store
+            })
+            .output_key("initial_categories")
+            .build()
+        )
+        workflow_builder.add_step(plan_processing_step)
+        
+        # Exploration step (updated to use store)
+        exploration_step = (workflow_builder.build_step()
+            .name("Exploration")
+            .description("Explore the taxonomy tree")
+            .agent(self.agents["explorer"])
+            .task("Explore the taxonomy tree for {{root_category}} with initial categories: {{initial_categories}}")
+            .pattern(self.patterns["search_enhanced_exploration"])
+            .context_data({
+                "category": "{{root_category}}",
+                "parent": None,
+                "store": self.store,
+                "agent": self.agents["explorer"],
+                "tools": ["search_knowledge_base", "search_subcategories", "search_category_info"],
+                "max_depth": "{{max_depth}}",
+                "breadth_limit": "{{breadth_limit}}",
+                "strategy": "{{strategy}}",
+                "initial_categories": "{{initial_categories}}"
+            })
+            .output_key("exploration_result")
+            .build()
+        )
+        workflow_builder.add_step(exploration_step)
+        
+        # Compliance mapping step (updated to use store)
+        compliance_step = (workflow_builder.build_step()
+            .name("ComplianceMapping")
+            .description("Map compliance requirements to taxonomy")
+            .agent(self.agents["compliance"])
+            .task("Map compliance requirements for all categories")
+            .pattern(self.patterns["verify_execute"])
+            .context_data({
+                "categories": self.store.get_all_nodes,
+                "jurisdictions": "{{jurisdictions}}",
+                "store": self.store,
+                "tools": ["get_compliance_requirements", "search_compliance_requirements"]
+            })
+            .output_key("compliance_results")
+            .build()
+        )
+        workflow_builder.add_step(compliance_step)
+        
+        # Legal mapping step (updated to use store)
+        legal_step = (workflow_builder.build_step()
+            .name("LegalMapping")
+            .description("Map legal requirements to taxonomy")
+            .agent(self.agents["legal"])
+            .task("Map legal requirements for all categories")
+            .pattern(self.patterns["verify_execute"])
+            .context_data({
+                "categories": self.store.get_all_nodes,
+                "jurisdictions": "{{jurisdictions}}",
+                "store": self.store,
+                "tools": ["get_applicable_laws", "search_legal_requirements"]
+            })
+            .output_key("legal_results")
+            .build()
+        )
+        workflow_builder.add_step(legal_step)
+        
+        # Tree building step (using processing step instead of agent step)
+        tree_step = (workflow_builder.build_step()
+            .name("TreeBuilding")
+            .description("Build final taxonomy tree")
+            .processing_function(self._build_taxonomy_tree)
+            .context_data({
+                "root_category": "{{root_category}}",
+                "compliance_results": "{{compliance_results}}",
+                "legal_results": "{{legal_results}}",
+                "store": self.store
+            })
+            .output_key("taxonomy")
+            .build()
+        )
+        workflow_builder.add_step(tree_step)
+        
+        # Output step (using processing step)
+        output_step = (workflow_builder.build_step()
+            .name("SaveOutput")
+            .description("Save taxonomy to output file if path provided")
+            .processing_function(self._save_taxonomy)
+            .context_data({
+                "taxonomy": "{{taxonomy}}",
+                "output_path": "{{output_path}}"
+            })
+            .build()
+        )
+        workflow_builder.add_step(output_step)
+        
+        # Build the final workflow definition
+        self.workflow_definition = workflow_builder.build()
     
     async def _process_plan(self, context: Dict[str, Any]) -> List[str]:
         """Process planner output to extract initial categories.

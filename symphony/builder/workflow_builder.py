@@ -7,7 +7,7 @@ from typing import Dict, List, Any, Optional, Union, Callable, Awaitable
 import asyncio
 from symphony.core.registry import ServiceRegistry
 from symphony.orchestration.workflow_definition import WorkflowDefinition
-from symphony.orchestration.steps import TaskStep, ConditionalStep, ParallelStep, LoopStep, ProcessingStep
+from symphony.orchestration.steps import TaskStep, ConditionalStep, ParallelStep, LoopStep, ProcessingStep, WorkflowStep
 from symphony.execution.workflow_tracker import Workflow
 from symphony.builder.workflow_step_builder import StepBuilder
 

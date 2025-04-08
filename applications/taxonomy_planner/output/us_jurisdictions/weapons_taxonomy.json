@@ -1,0 +1,688 @@
+{
+  "name": "Weapons",
+  "subcategories": [
+    {
+      "name": "Firearms",
+      "subcategories": [
+        {
+          "name": "Handguns",
+          "subcategories": [
+            {
+              "name": "Revolvers"
+            },
+            {
+              "name": "Semi-Automatic Pistols"
+            },
+            {
+              "name": "Single-Action Pistols"
+            }
+          ],
+          "compliance": {
+            "federal": "Gun Control Act of 1968, National Firearms Act, Bureau of Alcohol, Tobacco, Firearms and Explosives (ATF) regulations",
+            "state": "Varies by state; background checks and licensing requirements apply"
+          },
+          "legal": {
+            "purchase_age": "21 for handguns under federal law",
+            "restrictions": "Prohibited persons (e.g., felons) cannot purchase or possess",
+            "registration": "Federal registration for certain types under NFA"
+          }
+        },
+        {
+          "name": "Rifles",
+          "subcategories": [
+            {
+              "name": "Bolt-Action Rifles"
+            },
+            {
+              "name": "Lever-Action Rifles"
+            },
+            {
+              "name": "Semi-Automatic Rifles"
+            }
+          ],
+          "compliance": {
+            "federal": "Gun Control Act of 1968, National Firearms Act, ATF regulations",
+            "state": "State-specific restrictions on magazine capacity and features"
+          },
+          "legal": {
+            "purchase_age": "18 for rifles under federal law",
+            "restrictions": "Certain AR-15 style rifles may be restricted under state laws",
+            "registration": "Generally not required unless specific features trigger NFA"
+          }
+        },
+        {
+          "name": "Shotguns",
+          "subcategories": [
+            {
+              "name": "Pump-Action Shotguns"
+            },
+            {
+              "name": "Semi-Automatic Shotguns"
+            },
+            {
+              "name": "Break-Action Shotguns"
+            }
+          ],
+          "compliance": {
+            "federal": "Gun Control Act of 1968, ATF regulations",
+            "state": "Regulations may vary regarding magazine capacity and barrel length"
+          },
+          "legal": {
+            "purchase_age": "18 under federal law",
+            "restrictions": "Certain models may be subject to state-specific regulations",
+            "registration": "Generally not required except for specific configurations"
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Regulated under ATF, compliance with Gun Control Act and NFA",
+        "state": "Must adhere to state-specific firearm laws and licensing"
+      },
+      "legal": {
+        "purchase_requirements": "Background checks, valid identification",
+        "carry_permits": "May require separate permits for concealed or open carry",
+        "transportation": "Must comply with federal and state transportation laws"
+      }
+    },
+    {
+      "name": "Melee Weapons",
+      "subcategories": [
+        {
+          "name": "Bladed Weapons",
+          "subcategories": [
+            {
+              "name": "Knives"
+            },
+            {
+              "name": "Swords"
+            },
+            {
+              "name": "Daggers"
+            }
+          ],
+          "compliance": {
+            "federal": "Generally unregulated, but certain restrictions apply",
+            "state": "Many states have specific laws regarding blade length and concealment"
+          },
+          "legal": {
+            "purchase_age": "Typically 18, but varies by state",
+            "restrictions": "Switchblades and other automatic knives are restricted in some states",
+            "carry": "Concealed carry may require permits depending on state laws"
+          }
+        },
+        {
+          "name": "Impact Weapons",
+          "subcategories": [
+            {
+              "name": "Batons"
+            },
+            {
+              "name": "Clubs"
+            },
+            {
+              "name": "Maces"
+            }
+          ],
+          "compliance": {
+            "federal": "Regulated under certain federal statutes if intended for use by law enforcement",
+            "state": "Varies widely; some states prohibit certain types"
+          },
+          "legal": {
+            "purchase_age": "Generally 18, but restrictions may apply",
+            "restrictions": "Some types require permits or are outright banned",
+            "carry": "Often restricted in public places without proper authorization"
+          }
+        },
+        {
+          "name": "Polearms",
+          "subcategories": [
+            {
+              "name": "Spears"
+            },
+            {
+              "name": "Halberds"
+            },
+            {
+              "name": "Naginatas"
+            }
+          ],
+          "compliance": {
+            "federal": "Generally unregulated",
+            "state": "Certain states may have restrictions on length or type"
+          },
+          "legal": {
+            "purchase_age": "Typically 18",
+            "restrictions": "Limited in most jurisdictions",
+            "carry": "May be restricted in public spaces"
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Less regulated compared to firearms; some restrictions based on intended use",
+        "state": "State laws vary significantly regarding possession and carry"
+      },
+      "legal": {
+        "purchase_requirements": "Generally no federal restrictions, but state laws may apply",
+        "carry_permits": "Often not required, but restrictions on concealed carry may exist",
+        "use": "Permissible for self-defense and sporting purposes, depending on jurisdiction"
+      }
+    },
+    {
+      "name": "Explosives",
+      "subcategories": [
+        {
+          "name": "Ammunition",
+          "subcategories": [
+            {
+              "name": "Rifle Ammunition"
+            },
+            {
+              "name": "Handgun Ammunition"
+            },
+            {
+              "name": "Shotgun Shells"
+            }
+          ],
+          "compliance": {
+            "federal": "Regulated under ATF; certain types may require permits",
+            "state": "Background checks for purchases in some states"
+          },
+          "legal": {
+            "purchase_age": "18 for rifles and shotguns, 21 for handgun ammunition",
+            "restrictions": "Certain high-capacity magazines may be restricted",
+            "storage": "Must comply with federal and state storage laws"
+          }
+        },
+        {
+          "name": "Detonators",
+          "subcategories": [
+            {
+              "name": "Blasting Caps"
+            },
+            {
+              "name": "Fuzes"
+            },
+            {
+              "name": "Electric Detonators"
+            }
+          ],
+          "compliance": {
+            "federal": "Strictly regulated by ATF and Department of Transportation",
+            "state": "Highly restricted; typically requires special licenses"
+          },
+          "legal": {
+            "purchase_age": "21 and above with proper licensing",
+            "restrictions": "Non-commercial use generally prohibited",
+            "storage": "Must be stored in secure, approved facilities"
+          }
+        },
+        {
+          "name": "Explosive Devices",
+          "subcategories": [
+            {
+              "name": "Grenades"
+            },
+            {
+              "name": "Bombs"
+            },
+            {
+              "name": "Landmines"
+            }
+          ],
+          "compliance": {
+            "federal": "Highly restricted; possession typically limited to military and law enforcement",
+            "state": "Prohibited for civilian use"
+          },
+          "legal": {
+            "purchase_age": "Generally prohibited",
+            "restrictions": "Illegal for civilian possession",
+            "carry": "Strictly forbidden under all circumstances"
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Regulated under the Bureau of Alcohol, Tobacco, Firearms and Explosives (ATF) and Department of Transportation",
+        "state": "Stringent state-level regulations; often mirror federal restrictions"
+      },
+      "legal": {
+        "purchase_requirements": "Extremely limited; typically requires federal licenses",
+        "carry_permits": "Not available for civilians",
+        "use": "Restricted to specific industries and governmental entities"
+      }
+    },
+    {
+      "name": "Non-Lethal Weapons",
+      "subcategories": [
+        {
+          "name": "Tasers and Stun Guns",
+          "subcategories": [
+            {
+              "name": "Carry-Authorized Tasers"
+            },
+            {
+              "name": "Stun Guns"
+            },
+            {
+              "name": "Stun Devices"
+            }
+          ],
+          "compliance": {
+            "federal": "Regulated under specific ATF guidelines",
+            "state": "Bans and restrictions vary; some states require permits"
+          },
+          "legal": {
+            "purchase_age": "18, varies by state",
+            "restrictions": "Certain municipalities may prohibit possession",
+            "carry": "May require a concealed carry permit in some states"
+          }
+        },
+        {
+          "name": "Pepper Spray and Tear Gas",
+          "subcategories": [
+            {
+              "name": "Standard Pepper Spray"
+            },
+            {
+              "name": "Long-Range Pepper Spray"
+            },
+            {
+              "name": "Combined Pepper Spray Devices"
+            }
+          ],
+          "compliance": {
+            "federal": "Allowed for self-defense; certain concentration limits apply",
+            "state": "Some states limit size, strength, and possess patterns"
+          },
+          "legal": {
+            "purchase_age": "18 in most states",
+            "restrictions": "Prohibited in some locations like schools and government buildings",
+            "carry": "Permit not usually required, but restrictions on use apply"
+          }
+        },
+        {
+          "name": "Batons and Sticks",
+          "subcategories": [
+            {
+              "name": "Expandable Batons"
+            },
+            {
+              "name": "Fixed Batons"
+            },
+            {
+              "name": "Rubber Sticks"
+            }
+          ],
+          "compliance": {
+            "federal": "Less regulated, but certain types are restricted",
+            "state": "Varies widely; many states prohibit concealed carry"
+          },
+          "legal": {
+            "purchase_age": "Typically 18",
+            "restrictions": "Certain types banned or restricted in multiple states",
+            "carry": "Often restricted to open carry only or prohibited altogether"
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Regulated under specific federal statutes depending on the weapon type",
+        "state": "Extensive variation; some states have stringent controls while others are more permissive"
+      },
+      "legal": {
+        "purchase_requirements": "Generally accessible to adults, with some restrictions",
+        "carry_permits": "May not require permits, but use is regulated",
+        "use": "Permitted for self-defense; misuse can lead to criminal charges"
+      }
+    },
+    {
+      "name": "Ammunition",
+      "subcategories": [
+        {
+          "name": "Rifle Ammunition",
+          "subcategories": [
+            {
+              "name": ".22 LR"
+            },
+            {
+              "name": "5.56 NATO"
+            },
+            {
+              "name": "7.62x39"
+            }
+          ],
+          "compliance": {
+            "federal": "Regulated under the Gun Control Act; background checks for some purchases",
+            "state": "Limited in some states regarding quantity and type"
+          },
+          "legal": {
+            "purchase_age": "18",
+            "restrictions": "Certain high-capacity magazines may be restricted",
+            "storage": "Must comply with federal and state storage laws"
+          }
+        },
+        {
+          "name": "Handgun Ammunition",
+          "subcategories": [
+            {
+              "name": "9mm"
+            },
+            {
+              "name": ".45 ACP"
+            },
+            {
+              "name": ".40 S&W"
+            }
+          ],
+          "compliance": {
+            "federal": "Subject to background checks in some states",
+            "state": "Purchase limits and restrictions vary"
+          },
+          "legal": {
+            "purchase_age": "21 in some states for certain calibers",
+            "restrictions": "High-capacity magazines may be limited",
+            "storage": "Must adhere to laws regarding safe storage"
+          }
+        },
+        {
+          "name": "Shotgun Shells",
+          "subcategories": [
+            {
+              "name": "12 Gauge"
+            },
+            {
+              "name": "20 Gauge"
+            },
+            {
+              "name": "Shot Shells"
+            }
+          ],
+          "compliance": {
+            "federal": "Regulated under the Gun Control Act",
+            "state": "Some states impose limits on quantity and types"
+          },
+          "legal": {
+            "purchase_age": "18",
+            "restrictions": "Magazine capacity and type may be regulated",
+            "storage": "Must follow federal and state storage requirements"
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Regulated under ATF guidelines and the Gun Control Act",
+        "state": "Varies widely; some states have specific restrictions on types and quantities"
+      },
+      "legal": {
+        "purchase_requirements": "Vary by state; some require background checks",
+        "carry_permits": "Generally not required for ammunition possession",
+        "use": "Permitted for lawful firearm use; illegal to use for unlawful purposes"
+      }
+    },
+    {
+      "name": "Accessories",
+      "subcategories": [
+        {
+          "name": "Optics and Sights",
+          "subcategories": [
+            {
+              "name": "Scopes"
+            },
+            {
+              "name": "Red Dot Sights"
+            },
+            {
+              "name": "Holographic Sights"
+            }
+          ],
+          "compliance": {
+            "federal": "Generally unregulated",
+            "state": "Some states restrict laser sights in certain contexts"
+          },
+          "legal": {
+            "purchase_age": "18",
+            "restrictions": "Laser sights may have specific restrictions",
+            "use": "Permitted for enhancing firearm accuracy"
+          }
+        },
+        {
+          "name": "Magazines and Clips",
+          "subcategories": [
+            {
+              "name": "High-Capacity Magazines"
+            },
+            {
+              "name": "Standard Capacity Magazines"
+            },
+            {
+              "name": "Drum Magazines"
+            }
+          ],
+          "compliance": {
+            "federal": "Regulated under federal law; certain capacities restricted",
+            "state": "Many states have limits on magazine capacity"
+          },
+          "legal": {
+            "purchase_age": "18-21 depending on state",
+            "restrictions": "High-capacity magazines may be banned or limited",
+            "carry": "Transport must comply with state-specific laws"
+          }
+        },
+        {
+          "name": "Suppressors",
+          "subcategories": [
+            {
+              "name": "Silencers"
+            },
+            {
+              "name": "Mufflers"
+            },
+            {
+              "name": "Suppression Devices"
+            }
+          ],
+          "compliance": {
+            "federal": "Heavily regulated under the National Firearms Act",
+            "state": "Banned or restricted in many states"
+          },
+          "legal": {
+            "purchase_age": "21 with proper licensing",
+            "restrictions": "Subject to strict registration and transfer laws",
+            "ownership": "Limited to lawful firearm owners with permits"
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Accessories are subject to varying regulations depending on type",
+        "state": "State laws may impose additional restrictions or bans"
+      },
+      "legal": {
+        "purchase_requirements": "Varies by accessory type; some require permits",
+        "carry_permits": "Not typically required unless accessory is restricted",
+        "use": "Must be used in accordance with firearm laws and regulations"
+      }
+    },
+    {
+      "name": "Personal Defense Weapons",
+      "subcategories": [
+        {
+          "name": "Pepper Sprays",
+          "subcategories": [
+            {
+              "name": "Standard Pepper Spray"
+            },
+            {
+              "name": "Gel Pepper Spray"
+            },
+            {
+              "name": "Foam Pepper Spray"
+            }
+          ],
+          "compliance": {
+            "federal": "Allowed for self-defense; concentration limits apply",
+            "state": "Some states have specific regulations on size and strength"
+          },
+          "legal": {
+            "purchase_age": "18 in most states",
+            "restrictions": "Prohibited in certain areas like schools",
+            "carry": "Permitted for self-defense with possible location restrictions"
+          }
+        },
+        {
+          "name": "Personal Alarms",
+          "subcategories": [
+            {
+              "name": "Noise Alarms"
+            },
+            {
+              "name": "LED Flash Alarms"
+            },
+            {
+              "name": "Combined Alarms"
+            }
+          ],
+          "compliance": {
+            "federal": "Unregulated",
+            "state": "Generally unregulated"
+          },
+          "legal": {
+            "purchase_age": "All ages",
+            "restrictions": "None",
+            "carry": "Permitted for personal safety"
+          }
+        },
+        {
+          "name": "Personal Safety Tools",
+          "subcategories": [
+            {
+              "name": "Kubotans"
+            },
+            {
+              "name": "Tactical Pens"
+            },
+            {
+              "name": "Keychain Weapons"
+            }
+          ],
+          "compliance": {
+            "federal": "Generally unregulated",
+            "state": "Some states have restrictions on concealed carry"
+          },
+          "legal": {
+            "purchase_age": "Typically 18",
+            "restrictions": "Certain designs may be restricted",
+            "carry": "May be subject to concealed carry laws"
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Varies by weapon type; some are unregulated",
+        "state": "State-specific laws may apply, especially for concealed carry"
+      },
+      "legal": {
+        "purchase_requirements": "Minimal to none, depending on the device",
+        "carry_permits": "Not generally required, but some restrictions exist",
+        "use": "Permitted for personal defense; misuse can lead to legal consequences"
+      }
+    },
+    {
+      "name": "Specialized Weapons",
+      "subcategories": [
+        {
+          "name": "Underwater Weapons",
+          "subcategories": [
+            {
+              "name": "Spearguns"
+            },
+            {
+              "name": "Underwater Ammunition"
+            },
+            {
+              "name": "Harpoon Launchers"
+            }
+          ],
+          "compliance": {
+            "federal": "Regulated under firearms laws if they qualify as firearms",
+            "state": "May have additional restrictions based on usage and type"
+          },
+          "legal": {
+            "purchase_age": "18-21 depending on classification",
+            "restrictions": "Limited to certain activities like fishing",
+            "carry": "Restricted to specific environments and uses"
+          }
+        },
+        {
+          "name": "Antique and Curio Weapons",
+          "subcategories": [
+            {
+              "name": "Historical Firearms"
+            },
+            {
+              "name": "Replica Swords"
+            },
+            {
+              "name": "Vintage Knives"
+            }
+          ],
+          "compliance": {
+            "federal": "Exempt from some regulations if classified as antiques",
+            "state": "Varies; some states regulate replicas similarly to real weapons"
+          },
+          "legal": {
+            "purchase_age": "Typically 18",
+            "restrictions": "Depends on whether the item is a replica or functional weapon",
+            "carry": "May be restricted based on appearance and state laws"
+          }
+        },
+        {
+          "name": "Sporting Weapons",
+          "subcategories": [
+            {
+              "name": "Paintball Guns"
+            },
+            {
+              "name": "Airsoft Guns"
+            },
+            {
+              "name": "BB Guns"
+            }
+          ],
+          "compliance": {
+            "federal": "Regulated differently from lethal firearms",
+            "state": "Some states have age restrictions and usage laws"
+          },
+          "legal": {
+            "purchase_age": "Typically 18, some variations by state",
+            "restrictions": "Use restricted to designated areas",
+            "carry": "Generally allowed in private properties; public carry may be restricted"
+          }
+        }
+      ],
+      "compliance": {
+        "federal": "Regulations depend on the weapon's classification under federal law",
+        "state": "State-specific laws vary widely based on weapon type and intended use"
+      },
+      "legal": {
+        "purchase_requirements": "Varies; antiques may have different requirements",
+        "carry_permits": "May not be required, but restrictions based on type and state exist",
+        "use": "Limited to specific contexts like sport, collection, or historical reenactment"
+      }
+    }
+  ],
+  "compliance": {
+    "federal": "Overall regulation under the Bureau of Alcohol, Tobacco, Firearms and Explosives (ATF), Gun Control Act, National Firearms Act, and other relevant federal laws",
+    "state": "Compliance with individual state laws is mandatory, which may impose additional restrictions or requirements beyond federal law"
+  },
+  "legal": {
+    "purchase_requirements": "Vary by weapon type and jurisdiction; generally include age restrictions, background checks, and licensing",
+    "carry_permits": "Depends on weapon type and state laws; may require concealed or open carry permits",
+    "use": "Must adhere to self-defense laws, prohibition of use in unlawful activities, and adherence to specific regulations regarding where and how weapons can be used"
+  },
+  "metadata": {
+    "generated_at": "2025-04-08T19:35:20.765205",
+    "model": "o1-mini",
+    "max_depth": 4,
+    "breadth_limit": 10,
+    "strategy": "parallel",
+    "jurisdictions": [
+      "USA"
+    ]
+  }
+}

@@ -4,6 +4,13 @@ This module provides components for defining workflows in a declarative way,
 enabling complex orchestration patterns for agent interactions.
 """
 
+# Try importing state management tools conditionally
+try:
+    from symphony.core.state import EntityRestorer, RestorationContext, register_entity_restorer
+    STATE_MANAGEMENT_AVAILABLE = True
+except ImportError:
+    STATE_MANAGEMENT_AVAILABLE = False
+
 import uuid
 import copy
 from datetime import datetime
@@ -210,3 +217,63 @@ class WorkflowDefinition(BaseModel):
             List of instantiated workflow steps
         """
         return [WorkflowStep.from_dict(step) for step in self.steps]
+        
+    def get_state_data(self) -> Dict[str, Any]:
+        """Get state data for workflow definition.
+        
+        This method is used by the state management system to serialize the workflow.
+        
+        Returns:
+            State data for serialization
+        """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "steps": self.steps,
+            "created_at": self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
+            "metadata": self.metadata
+        }
+
+
+# Add WorkflowDefinition restorer if state management is available
+if STATE_MANAGEMENT_AVAILABLE:
+    class WorkflowDefinitionRestorer(EntityRestorer):
+        """Restorer for WorkflowDefinition entities."""
+        
+        @property
+        def entity_type(self) -> str:
+            return "WorkflowDefinition"
+        
+        async def restore(self, entity_id: str, data: Dict[str, Any], context: RestorationContext) -> Any:
+            """Restore a workflow definition from serialized state."""
+            try:
+                # Parse created_at if it's a string
+                created_at = data.get("created_at")
+                if isinstance(created_at, str):
+                    try:
+                        created_at = datetime.fromisoformat(created_at)
+                    except ValueError:
+                        created_at = datetime.now()
+                
+                # Create workflow definition
+                workflow_def = WorkflowDefinition(
+                    id=entity_id,
+                    name=data.get("name", "Restored Workflow"),
+                    description=data.get("description", ""),
+                    steps=data.get("steps", []),
+                    created_at=created_at,
+                    metadata=data.get("metadata", {})
+                )
+                
+                # Register with context
+                context.register_entity("WorkflowDefinition", entity_id, workflow_def)
+                
+                return workflow_def
+                
+            except Exception as e:
+                print(f"Failed to restore WorkflowDefinition {entity_id}: {e}")
+                return None
+    
+    # Register the restorer
+    register_entity_restorer(WorkflowDefinitionRestorer())

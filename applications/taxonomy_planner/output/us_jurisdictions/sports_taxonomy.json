@@ -1,0 +1,616 @@
+{
+  "name": "Sports",
+  "compliance": {
+    "jurisdiction": "USA",
+    "regulatory_body": "Various, including NCAA, NBA, NFL, FIFA, etc.",
+    "standards": "Adherence to federal and state sports regulations, safety standards, anti-doping policies."
+  },
+  "legal": {
+    "jurisdiction": "USA",
+    "requirements": "Compliance with Title IX, intellectual property laws, contract laws for athletes and organizations, liability waivers."
+  },
+  "subcategories": [
+    {
+      "name": "Team Sports",
+      "compliance": {
+        "jurisdiction": "USA",
+        "regulatory_body": "NCAA, NBA, NFL, MLB, NHL",
+        "standards": "Team licensing, player eligibility, safety protocols."
+      },
+      "legal": {
+        "jurisdiction": "USA",
+        "requirements": "Collective bargaining agreements, antitrust laws, sponsorship contracts."
+      },
+      "subcategories": [
+        {
+          "name": "Basketball",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "NBA, NCAA",
+            "standards": "Equipment standards, game rules compliance."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Player contracts, intellectual property for team logos."
+          }
+        },
+        {
+          "name": "Football",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "NFL, NCAA",
+            "standards": "Concussion protocols, equipment safety."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Player agreements, league policies."
+          }
+        },
+        {
+          "name": "Soccer",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "MLS, US Soccer Federation",
+            "standards": "Youth development programs, fair play regulations."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Transfer agreements, broadcasting rights."
+          }
+        },
+        {
+          "name": "Baseball",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "MLB, NCAA",
+            "standards": "Drug testing, game officiating standards."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Player contracts, merchandise licensing."
+          }
+        },
+        {
+          "name": "Hockey",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "NHL, NCAA",
+            "standards": "Ice rink safety, equipment standards."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Team agreements, venue contracts."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Individual Sports",
+      "compliance": {
+        "jurisdiction": "USA",
+        "regulatory_body": "USATF, USTA, etc.",
+        "standards": "Competition rules, athlete eligibility."
+      },
+      "legal": {
+        "jurisdiction": "USA",
+        "requirements": "Sponsorship deals, personal endorsement contracts."
+      },
+      "subcategories": [
+        {
+          "name": "Tennis",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USTA",
+            "standards": "Court dimensions, equipment specifications."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Player endorsements, tournament hosting agreements."
+          }
+        },
+        {
+          "name": "Athletics",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USATF",
+            "standards": "Doping regulations, competition standards."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Event liability waivers, sponsorship contracts."
+          }
+        },
+        {
+          "name": "Golf",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "PGA, USGA",
+            "standards": "Course standards, equipment regulations."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Tournament licensing, player sponsorships."
+          }
+        },
+        {
+          "name": "Martial Arts",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USA Judo, Taekwondo USA, etc.",
+            "standards": "Safety protocols, competition rules."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Certification of instructors, event liability."
+          }
+        },
+        {
+          "name": "Gymnastics",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USA Gymnastics",
+            "standards": "Equipment safety, competition guidelines."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Athlete contracts, venue agreements."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Extreme Sports",
+      "compliance": {
+        "jurisdiction": "USA",
+        "regulatory_body": "Varies by sport and location",
+        "standards": "Safety equipment standards, location permits."
+      },
+      "legal": {
+        "jurisdiction": "USA",
+        "requirements": "Risk liability waivers, insurance requirements."
+      },
+      "subcategories": [
+        {
+          "name": "Skateboarding",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "World Skate, local authorities",
+            "standards": "Park safety regulations, event standards."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Event permits, liability waivers."
+          }
+        },
+        {
+          "name": "Rock Climbing",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USA Climbing",
+            "standards": "Route safety, equipment certification."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Access permits, participant waivers."
+          }
+        },
+        {
+          "name": "BMX",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USA BMX",
+            "standards": "Track safety, competition rules."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Event licensing, insurance coverage."
+          }
+        },
+        {
+          "name": "Parkour",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "Local municipalities",
+            "standards": "Public area usage permits, safety guidelines."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Public liability waivers, event permits."
+          }
+        },
+        {
+          "name": "Snowboarding",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USSA",
+            "standards": "Slope safety, equipment standards."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Resort agreements, participant waivers."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Combat Sports",
+      "compliance": {
+        "jurisdiction": "USA",
+        "regulatory_body": "State Athletic Commissions, UFC, WWE",
+        "standards": "Fight regulations, safety protocols."
+      },
+      "legal": {
+        "jurisdiction": "USA",
+        "requirements": "Licensing of fighters and promoters, broadcasting rights."
+      },
+      "subcategories": [
+        {
+          "name": "Boxing",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "State Athletic Commissions, WBA, WBC",
+            "standards": "Weight classes, bout regulations."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Promoter contracts, fighter agreements."
+          }
+        },
+        {
+          "name": "Mixed Martial Arts (MMA)",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USA MMA, state commissions",
+            "standards": "Fight rules, medical requirements."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Event licensing, fighter contracts."
+          }
+        },
+        {
+          "name": "Wrestling",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "WWE, AEW",
+            "standards": "Scripted match regulations, performer safety."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Talent contracts, intellectual property protection."
+          }
+        },
+        {
+          "name": "Karate",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USA Karate",
+            "standards": "Belt certification, competition rules."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Instructor licensing, event liability."
+          }
+        },
+        {
+          "name": "Judo",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USA Judo",
+            "standards": "Competition rules, safety standards."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Tournament licenses, participant agreements."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Motor Sports",
+      "compliance": {
+        "jurisdiction": "USA",
+        "regulatory_body": "NASCAR, FIA, NHRA",
+        "standards": "Vehicle safety standards, race regulations."
+      },
+      "legal": {
+        "jurisdiction": "USA",
+        "requirements": "Event permits, sponsorship contracts."
+      },
+      "subcategories": [
+        {
+          "name": "Auto Racing",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "NASCAR, IndyCar",
+            "standards": "Vehicle specifications, track safety."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Driver contracts, venue agreements."
+          }
+        },
+        {
+          "name": "Motorcycle Racing",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "AMA, MotoAmerica",
+            "standards": "Helmet and gear standards, competition rules."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Rider licenses, event insurance."
+          }
+        },
+        {
+          "name": "Drag Racing",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "NHRA",
+            "standards": "Engine regulations, safety barriers."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Track permits, participant waivers."
+          }
+        },
+        {
+          "name": "Off-Road Racing",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "TORC, SCORE International",
+            "standards": "Vehicle modifications, trail safety."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Land use permits, environmental compliance."
+          }
+        },
+        {
+          "name": "Kart Racing",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "World Karting Association",
+            "standards": "Kart specifications, track regulations."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Facility licensing, driver agreements."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Winter Sports",
+      "compliance": {
+        "jurisdiction": "USA",
+        "regulatory_body": "USSA, NCAA",
+        "standards": "Equipment standards, slope safety."
+      },
+      "legal": {
+        "jurisdiction": "USA",
+        "requirements": "Resort agreements, athlete contracts."
+      },
+      "subcategories": [
+        {
+          "name": "Skiing",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USSA",
+            "standards": "Slope safety, equipment regulations."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Resort permits, athlete waivers."
+          }
+        },
+        {
+          "name": "Snowboarding",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USSA",
+            "standards": "Gear standards, competition rules."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Event licensing, participant agreements."
+          }
+        },
+        {
+          "name": "Ice Hockey",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "NHL, USA Hockey",
+            "standards": "Equipment safety, rink standards."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Player contracts, venue agreements."
+          }
+        },
+        {
+          "name": "Figure Skating",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "US Figure Skating",
+            "standards": "Competition rules, safety protocols."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Event permits, athlete contracts."
+          }
+        },
+        {
+          "name": "Bobsleigh",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USA Bobsled & Skeleton",
+            "standards": "Track safety, equipment standards."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Facility licensing, team agreements."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Water Sports",
+      "compliance": {
+        "jurisdiction": "USA",
+        "regulatory_body": "US Aquatic Sports, US Sailing",
+        "standards": "Safety regulations, competition standards."
+      },
+      "legal": {
+        "jurisdiction": "USA",
+        "requirements": "Venue permits, participant waivers."
+      },
+      "subcategories": [
+        {
+          "name": "Swimming",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USA Swimming",
+            "standards": "Pool safety, competition rules."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Event licensing, coach contracts."
+          }
+        },
+        {
+          "name": "Diving",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USA Diving",
+            "standards": "Platform safety, equipment standards."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Facility permits, athlete agreements."
+          }
+        },
+        {
+          "name": "Sailing",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "US Sailing",
+            "standards": "Vessel regulations, race rules."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Race permits, sponsorship contracts."
+          }
+        },
+        {
+          "name": "Surfing",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USA Surfing",
+            "standards": "Beach safety, competition guidelines."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Event permits, liability waivers."
+          }
+        },
+        {
+          "name": "Rowing",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "USRowing",
+            "standards": "Boat safety, competition rules."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Venue agreements, athlete contracts."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mind Sports",
+      "compliance": {
+        "jurisdiction": "USA",
+        "regulatory_body": "USA Chess Federation, Mind Sports Association",
+        "standards": "Fair play regulations, competition standards."
+      },
+      "legal": {
+        "jurisdiction": "USA",
+        "requirements": "Intellectual property for game rules, event licensing."
+      },
+      "subcategories": [
+        {
+          "name": "Chess",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "US Chess Federation",
+            "standards": "Tournament rules, player eligibility."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Event licensing, sponsorship deals."
+          }
+        },
+        {
+          "name": "Esports",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "Esports Integrity Commission",
+            "standards": "Fair play, anti-cheating measures."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Broadcast rights, player contracts."
+          }
+        },
+        {
+          "name": "Poker",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "State gaming commissions",
+            "standards": "Gambling regulations, fair play standards."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Licensing for tournaments, age restrictions."
+          }
+        },
+        {
+          "name": "Bridge",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "American Contract Bridge League",
+            "standards": "Competition rules, player eligibility."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Event permits, sponsorship agreements."
+          }
+        },
+        {
+          "name": "Scrabble",
+          "compliance": {
+            "jurisdiction": "USA",
+            "regulatory_body": "National Scrabble Association",
+            "standards": "Tournament rules, word list compliance."
+          },
+          "legal": {
+            "jurisdiction": "USA",
+            "requirements": "Intellectual property rights, event licensing."
+          }
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "generated_at": "2025-04-08T19:42:34.119641",
+    "model": "o1-mini",
+    "max_depth": 4,
+    "breadth_limit": 10,
+    "strategy": "parallel",
+    "jurisdictions": [
+      "USA"
+    ]
+  }
+}

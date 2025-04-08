@@ -1,0 +1,98 @@
+{
+  "category": "Weapons",
+  "subcategories": [
+    {
+      "category": "Firearms",
+      "subcategories": [
+        {
+          "category": "Handguns",
+          "subcategories": [],
+          "compliance": {},
+          "legal": {}
+        },
+        {
+          "category": "Rifles",
+          "subcategories": [],
+          "compliance": {},
+          "legal": {}
+        },
+        {
+          "category": "Shotguns",
+          "subcategories": [],
+          "compliance": {},
+          "legal": {}
+        }
+      ],
+      "compliance": {
+        "USA": {
+          "regulations": [
+            "ATF Regulations",
+            "NFA Restrictions"
+          ],
+          "standards": [
+            "BATFE Standards"
+          ]
+        }
+      },
+      "legal": {
+        "USA": {
+          "laws": [
+            "Second Amendment",
+            "Gun Control Act of 1968"
+          ],
+          "restrictions": [
+            "State and local laws vary"
+          ]
+        }
+      }
+    },
+    {
+      "category": "Bladed Weapons",
+      "subcategories": [
+        {
+          "category": "Knives",
+          "subcategories": [],
+          "compliance": {},
+          "legal": {}
+        },
+        {
+          "category": "Swords",
+          "subcategories": [],
+          "compliance": {},
+          "legal": {}
+        }
+      ],
+      "compliance": {},
+      "legal": {}
+    },
+    {
+      "category": "Explosives",
+      "subcategories": [
+        {
+          "category": "Grenades",
+          "subcategories": [],
+          "compliance": {},
+          "legal": {}
+        },
+        {
+          "category": "Mines",
+          "subcategories": [],
+          "compliance": {},
+          "legal": {}
+        }
+      ],
+      "compliance": {},
+      "legal": {}
+    }
+  ],
+  "compliance": {},
+  "legal": {},
+  "metadata": {
+    "generated_at": "2024-04-08T12:34:56.789012",
+    "max_depth": 4,
+    "jurisdictions": [
+      "USA"
+    ],
+    "note": "This is a test taxonomy generated with o1-mini planner and gpt-4o-mini exploration"
+  }
+}
