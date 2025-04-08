@@ -16,7 +16,7 @@ from .tools import register_tools
 logger = logging.getLogger(__name__)
 
 class TaxonomyPlanner:
-    """Main class for taxonomy generation."""
+    """Main class for taxonomy generation using Symphony workflow orchestration."""
     
     def __init__(self, config: Optional[TaxonomyConfig] = None):
         """Initialize the taxonomy planner.
@@ -25,19 +25,20 @@ class TaxonomyPlanner:
             config: Taxonomy configuration
         """
         self.config = config or TaxonomyConfig()
-        self.symphony = Symphony()
+        self.symphony = Symphony(persistence_enabled=True)
         self.agents = {}
         self.patterns = {}
         self.memory = None
         self.initialized = False
+        self.workflow_definition = None
     
     async def setup(self):
         """Initialize Symphony and set up components."""
         if self.initialized:
             return
         
-        # Initialize Symphony
-        await self.symphony.setup()
+        # Initialize Symphony with persistence enabled
+        await self.symphony.setup(state_dir=".symphony/taxonomy_planner_state")
         
         # Register tools
         register_tools(self.symphony, self.config)
@@ -51,7 +52,112 @@ class TaxonomyPlanner:
         # Create memory
         self.memory = self.symphony.create_memory()
         
+        # Create workflow definition for taxonomy generation
+        self._create_workflow_definition()
+        
         self.initialized = True
+    
+    def _create_workflow_definition(self):
+        """Create workflow definition for taxonomy generation process."""
+        workflow_builder = self.symphony.build_workflow()
+        
+        # Start building the workflow
+        workflow = (workflow_builder
+            .name("Taxonomy Generation Workflow")
+            .description("Workflow for generating hierarchical taxonomies with compliance and legal mappings")
+            # Planning step
+            .add_step(
+                self.symphony.build_step()
+                .name("Planning")
+                .description("Plan the taxonomy structure")
+                .agent(self.agents["planner"])
+                .task("{{root_category}}")
+                .pattern(self.patterns["chain_of_thought"])
+                .output_key("plan")
+                .build()
+            )
+            # Exploration step
+            .add_step(
+                self.symphony.build_step()
+                .name("Exploration")
+                .description("Explore the taxonomy tree")
+                .agent(self.agents["explorer"])
+                .task("Explore the taxonomy tree for {{root_category}}")
+                .pattern(self.patterns["search_enhanced_exploration"])
+                .context_data({
+                    "category": "{{root_category}}",
+                    "parent": None,
+                    "memory": self.memory,
+                    "agent": self.agents["explorer"],
+                    "tools": ["search_knowledge_base", "search_subcategories", "search_category_info"],
+                    "max_depth": "{{max_depth}}"
+                })
+                .output_key("exploration_result")
+                .build()
+            )
+            # Compliance mapping step
+            .add_step(
+                self.symphony.build_step()
+                .name("ComplianceMapping")
+                .description("Map compliance requirements to taxonomy")
+                .agent(self.agents["compliance"])
+                .task("Map compliance requirements for all categories")
+                .pattern(self.patterns["verify_execute"])
+                .context_data({
+                    "categories": "{{memory.get_all_nodes()}}",
+                    "jurisdictions": "{{jurisdictions}}",
+                    "tools": ["get_compliance_requirements", "search_compliance_requirements"]
+                })
+                .output_key("compliance_results")
+                .build()
+            )
+            # Legal mapping step
+            .add_step(
+                self.symphony.build_step()
+                .name("LegalMapping")
+                .description("Map legal requirements to taxonomy")
+                .agent(self.agents["legal"])
+                .task("Map legal requirements for all categories")
+                .pattern(self.patterns["verify_execute"])
+                .context_data({
+                    "categories": "{{memory.get_all_nodes()}}",
+                    "jurisdictions": "{{jurisdictions}}",
+                    "tools": ["get_applicable_laws", "search_legal_requirements"]
+                })
+                .output_key("legal_results")
+                .build()
+            )
+            # Tree building step (using processing step instead of agent step)
+            .add_step(
+                self.symphony.build_step()
+                .name("TreeBuilding")
+                .description("Build final taxonomy tree")
+                .processing_function(self._build_taxonomy_tree)
+                .context_data({
+                    "root_category": "{{root_category}}",
+                    "compliance_results": "{{compliance_results}}",
+                    "legal_results": "{{legal_results}}",
+                    "memory": "{{memory}}"
+                })
+                .output_key("taxonomy")
+                .build()
+            )
+            # Output step (using processing step)
+            .add_step(
+                self.symphony.build_step()
+                .name("SaveOutput")
+                .description("Save taxonomy to output file if path provided")
+                .processing_function(self._save_taxonomy)
+                .context_data({
+                    "taxonomy": "{{taxonomy}}",
+                    "output_path": "{{output_path}}"
+                })
+                .build()
+            )
+            .build()
+        )
+        
+        self.workflow_definition = workflow
     
     async def generate_taxonomy(
         self, 
@@ -77,9 +183,52 @@ class TaxonomyPlanner:
         # Use default jurisdictions if not provided
         jurisdictions = jurisdictions or self.config.default_jurisdictions
         
-        # Override max depth if provided
-        if max_depth is not None:
-            self.config.max_depth = max_depth
+        # Use configured max depth if not provided
+        effective_max_depth = max_depth if max_depth is not None else self.config.max_depth
+        
+        # Add root node to memory
+        self.memory.add_node(root_category)
+        
+        # Prepare initial context for workflow
+        initial_context = {
+            "root_category": root_category,
+            "jurisdictions": jurisdictions,
+            "max_depth": effective_max_depth,
+            "output_path": output_path,
+            "memory": self.memory
+        }
+        
+        # Generate workflow name based on category
+        workflow_name = f"taxonomy_{root_category.lower().replace(' ', '_')}"
+        
+        # Execute workflow with automatic checkpointing and resumption
+        workflow_engine = self.symphony.workflows.get_engine()
+        workflow_result = await workflow_engine.execute_workflow(
+            workflow_def=self.workflow_definition,
+            initial_context=initial_context,
+            auto_checkpoint=True,
+            resume_from_checkpoint=True
+        )
+        
+        # Get final taxonomy from workflow result context
+        context = workflow_result.metadata.get("context", {})
+        taxonomy = context.get("taxonomy", {})
+        
+        return taxonomy
+    
+    async def _build_taxonomy_tree(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Build complete taxonomy tree with compliance and legal data.
+        
+        Args:
+            context: Workflow step context
+            
+        Returns:
+            Complete taxonomy tree
+        """
+        root_category = context.get("root_category")
+        compliance_data = context.get("compliance_results", {})
+        legal_data = context.get("legal_results", {})
+        memory = context.get("memory")
         
         # Initialize taxonomy with root node
         taxonomy = {
@@ -89,248 +238,90 @@ class TaxonomyPlanner:
             "legal": {},
             "metadata": {
                 "generated_at": datetime.now().isoformat(),
-                "max_depth": self.config.max_depth,
-                "jurisdictions": jurisdictions
+                "max_depth": context.get("max_depth"),
+                "jurisdictions": context.get("jurisdictions", [])
             }
         }
         
-        # Add root node to memory
-        self.memory.add_node(root_category)
-        
-        # Step 1: Planning phase
-        logger.info(f"Planning taxonomy for {root_category}")
-        plan = await apply_pattern(
-            self.symphony,
-            self.patterns["chain_of_thought"],
-            self.agents["planner"],
-            f"Create a plan for generating a taxonomy for {root_category} across jurisdictions: {', '.join(jurisdictions)}",
-            {"max_depth": self.config.max_depth}
-        )
-        
-        # Step 2: Exploration phase with search enhancement
-        logger.info(f"Exploring subcategories for {root_category}")
-        exploration_result = await apply_pattern(
-            self.symphony,
-            self.patterns["search_enhanced_exploration"],
-            self.agents["explorer"],
-            f"Explore the taxonomy tree for {root_category}",
-            {
-                "category": root_category,
-                "parent": None,
-                "memory": self.memory,
-                "agent": self.agents["explorer"],
-                "tools": ["search_knowledge_base", "search_subcategories", "search_category_info"],
-                "max_depth": self.config.max_depth
-            }
-        )
-        
-        # Step 3: Compliance mapping phase
-        logger.info("Mapping compliance requirements")
-        compliance_results = {}
-        
-        # Get all categories from memory
-        categories = self.memory.get_all_nodes()
-        
-        for category in categories:
-            compliance_results[category] = {}
-            
-            for jurisdiction in jurisdictions:
-                result = await apply_pattern(
-                    self.symphony,
-                    self.patterns["verify_execute"],
-                    self.agents["compliance"],
-                    f"Identify compliance requirements for {category} in {jurisdiction}",
-                    {
-                        "tools": ["get_compliance_requirements", "search_compliance_requirements"]
-                    }
-                )
-                
-                if isinstance(result, dict):
-                    compliance_results[category][jurisdiction] = result
-                else:
-                    # Handle string results
-                    requirements = self._extract_requirements(result)
-                    compliance_results[category][jurisdiction] = requirements
-        
-        # Step 4: Legal mapping phase
-        logger.info("Mapping legal requirements")
-        legal_results = {}
-        
-        for category in categories:
-            legal_results[category] = {}
-            
-            for jurisdiction in jurisdictions:
-                result = await apply_pattern(
-                    self.symphony,
-                    self.patterns["verify_execute"],
-                    self.agents["legal"],
-                    f"Identify applicable laws for {category} in {jurisdiction}",
-                    {
-                        "tools": ["get_applicable_laws", "search_legal_requirements"]
-                    }
-                )
-                
-                if isinstance(result, dict):
-                    legal_results[category][jurisdiction] = result
-                else:
-                    # Handle string results
-                    laws = self._extract_laws(result)
-                    legal_results[category][jurisdiction] = laws
-        
-        # Step 5: Final refinement phase
-        logger.info("Refining taxonomy")
-        taxonomy = await self._build_taxonomy_tree(
+        # Build tree recursively
+        await self._build_node(
+            taxonomy, 
             root_category, 
-            compliance_results, 
-            legal_results
+            None, 
+            compliance_data, 
+            legal_data, 
+            memory
         )
-        
-        # Save output if path provided
-        if output_path:
-            self._save_taxonomy(taxonomy, output_path)
         
         return taxonomy
     
-    async def _build_taxonomy_tree(
-        self, 
-        root: str, 
-        compliance_data: Dict[str, Dict[str, Any]], 
-        legal_data: Dict[str, Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """Build complete taxonomy tree with compliance and legal data.
-        
-        Args:
-            root: Root category
-            compliance_data: Compliance data by category and jurisdiction
-            legal_data: Legal data by category and jurisdiction
-            
-        Returns:
-            Complete taxonomy tree
-        """
-        # Build tree recursively
-        tree = await self._build_node(root, None, compliance_data, legal_data)
-        return tree
-    
     async def _build_node(
         self, 
+        node: Dict[str, Any],
         category: str, 
         parent: Optional[str], 
         compliance_data: Dict[str, Dict[str, Any]], 
-        legal_data: Dict[str, Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        legal_data: Dict[str, Dict[str, Any]],
+        memory
+    ) -> None:
         """Build a single node and its children recursively.
         
         Args:
+            node: Current node to populate
             category: Current category
             parent: Parent category
             compliance_data: Compliance data by category and jurisdiction
             legal_data: Legal data by category and jurisdiction
-            
-        Returns:
-            Node and its children
+            memory: Symphony memory instance
         """
         # Get subcategories for this node
-        subcategories = self.memory.get_edges(category) or []
+        subcategories = memory.get_edges(category) or []
         
         # Get compliance and legal data for this category
-        compliance = compliance_data.get(category, {})
-        legal = legal_data.get(category, {})
+        if category in compliance_data:
+            node["compliance"] = compliance_data[category]
         
-        # Create node
-        node = {
-            "category": category,
-            "subcategories": [],
-            "compliance": compliance,
-            "legal": legal
-        }
-        
-        # Add parent reference if this isn't the root
-        if parent:
-            node["parent"] = parent
+        if category in legal_data:
+            node["legal"] = legal_data[category]
         
         # Process subcategories recursively
         for subcategory in subcategories:
-            child_node = await self._build_node(
+            child_node = {
+                "category": subcategory,
+                "subcategories": [],
+                "compliance": {},
+                "legal": {}
+            }
+            
+            if parent:
+                child_node["parent"] = parent
+            
+            # Process child recursively
+            await self._build_node(
+                child_node,
                 subcategory, 
                 category, 
                 compliance_data, 
-                legal_data
+                legal_data,
+                memory
             )
+            
+            # Add to parent's subcategories
             node["subcategories"].append(child_node)
-        
-        return node
     
-    def _extract_requirements(self, text: str) -> List[str]:
-        """Extract compliance requirements from text.
-        
-        Args:
-            text: Text containing requirements
-            
-        Returns:
-            List of requirements
-        """
-        requirements = []
-        
-        # Simple extraction based on line formatting
-        lines = text.strip().split("\n")
-        for line in lines:
-            line = line.strip()
-            if line.startswith("- ") or line.startswith("* "):
-                requirement = line[2:].strip()
-                if requirement:
-                    requirements.append(requirement)
-        
-        # If no formatted list found, try to use the whole text
-        if not requirements and text.strip():
-            return [text.strip()]
-        
-        return requirements
-    
-    def _extract_laws(self, text: str) -> List[Dict[str, str]]:
-        """Extract laws from text.
-        
-        Args:
-            text: Text containing laws
-            
-        Returns:
-            List of laws
-        """
-        laws = []
-        
-        # Simple extraction based on line formatting
-        lines = text.strip().split("\n")
-        current_law = None
-        
-        for line in lines:
-            line = line.strip()
-            if line.startswith("- ") or line.startswith("* "):
-                if current_law:
-                    laws.append(current_law)
-                
-                # Start a new law
-                title = line[2:].strip()
-                current_law = {"title": title}
-            elif current_law and line:
-                # Add description to current law
-                current_law["description"] = line
-        
-        # Add the last law if not already added
-        if current_law:
-            laws.append(current_law)
-        
-        # If no formatted list found, try to use the whole text
-        if not laws and text.strip():
-            return [{"title": text.strip()}]
-        
-        return laws
-    
-    def _save_taxonomy(self, taxonomy: Dict[str, Any], path: str) -> None:
+    async def _save_taxonomy(self, context: Dict[str, Any]) -> None:
         """Save taxonomy to a file.
         
         Args:
-            taxonomy: Taxonomy to save
-            path: Output path
+            context: Workflow step context with taxonomy and output path
         """
+        taxonomy = context.get("taxonomy", {})
+        path = context.get("output_path")
+        
+        if not path:
+            # No output path, nothing to do
+            return
+        
         # Create output directory if it doesn't exist
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         

@@ -2,11 +2,12 @@
 
 This module provides concrete implementations of workflow steps for various
 orchestration patterns, including task execution, conditional logic,
-parallel execution, and iterative processing.
+parallel execution, iterative processing, and custom processing functions.
 """
 
 import asyncio
-from typing import Dict, List, Optional, Any, Callable, Union
+import inspect
+from typing import Dict, List, Optional, Any, Callable, Union, Awaitable
 
 from symphony.core.task import Task, TaskStatus
 from symphony.core.agent_factory import AgentFactory
@@ -417,4 +418,94 @@ class LoopStep(WorkflowStep):
             step=step,
             exit_condition=data.get("exit_condition", "False"),
             max_iterations=data.get("max_iterations", 10)
+        )
+
+
+class ProcessingStep(WorkflowStep):
+    """Step that executes a custom processing function.
+    
+    This step allows for custom data processing within a workflow,
+    without requiring an agent or task. It's useful for data transformation,
+    aggregation, and other processing operations.
+    """
+    
+    def __init__(self, 
+                name: str, 
+                processing_function: Callable[[Dict[str, Any]], Union[Dict[str, Any], Awaitable[Dict[str, Any]]]],
+                context_data: Optional[Dict[str, Any]] = None,
+                description: str = ""):
+        """Initialize processing step.
+        
+        Args:
+            name: Name of the step
+            processing_function: Function that processes data
+            context_data: Additional context data for processing
+            description: Description of the step
+        """
+        super().__init__(name, description)
+        self.processing_function = processing_function
+        self.context_data = context_data or {}
+        
+    async def execute(self, context: WorkflowContext) -> StepResult:
+        """Execute the processing function with given context.
+        
+        Args:
+            context: Workflow context
+            
+        Returns:
+            Result of processing
+        """
+        try:
+            # Prepare combined context for processing
+            context_dict = context.data.copy()
+            if self.context_data:
+                # Add additional context data, resolving any templates
+                resolved_data = context.resolve_template(self.context_data)
+                context_dict.update(resolved_data)
+            
+            # Execute the processing function
+            is_async = inspect.iscoroutinefunction(self.processing_function)
+            if is_async:
+                result = await self.processing_function(context_dict)
+            else:
+                result = self.processing_function(context_dict)
+                
+            # If result is None, use empty dict
+            if result is None:
+                result = {}
+                
+            # Store result in context
+            context.set(f"step.{self.id}.result", result)
+            
+            return StepResult(
+                success=True,
+                output=result if isinstance(result, dict) else {"result": result},
+            )
+        except Exception as e:
+            return StepResult(
+                success=False,
+                output={},
+                error=f"Processing error: {str(e)}"
+            )
+            
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert step to dictionary for persistence."""
+        data = super().to_dict()
+        data.update({
+            "function_name": self.processing_function.__name__,
+            "context_data": self.context_data
+        })
+        return data
+        
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ProcessingStep':
+        """Create step from dictionary.
+        
+        Note: This method requires the processing function to be registered separately,
+        as functions cannot be serialized directly.
+        """
+        # In practice, processing functions need to be registered in a registry
+        # and looked up by name during deserialization
+        raise NotImplementedError(
+            "Deserialization of ProcessingStep requires a function registry mechanism."
         )

@@ -3,12 +3,13 @@
 This module provides a fluent interface for building Symphony workflows.
 """
 
-from typing import Dict, List, Any, Optional, Union, Callable
+from typing import Dict, List, Any, Optional, Union, Callable, Awaitable
 import asyncio
 from symphony.core.registry import ServiceRegistry
 from symphony.orchestration.workflow_definition import WorkflowDefinition
-from symphony.orchestration.steps import TaskStep, ConditionalStep, ParallelStep, LoopStep
+from symphony.orchestration.steps import TaskStep, ConditionalStep, ParallelStep, LoopStep, ProcessingStep
 from symphony.execution.workflow_tracker import Workflow
+from symphony.builder.workflow_step_builder import StepBuilder
 
 class WorkflowBuilder:
     """Builder for Symphony workflows.
@@ -26,6 +27,7 @@ class WorkflowBuilder:
         self.registry = registry or ServiceRegistry.get_instance()
         self.workflow_def: Optional[WorkflowDefinition] = None
         self.initial_context: Dict[str, Any] = {}
+        self.step_builder = None
         
     def create(self, name: str, description: str = "", metadata: Dict[str, Any] = None) -> 'WorkflowBuilder':
         """Create a new workflow definition.
@@ -135,7 +137,7 @@ class WorkflowBuilder:
     def add_loop(self,
                name: str,
                description: str,
-               step: Union[TaskStep, ConditionalStep, ParallelStep],
+               step: Union[TaskStep, ConditionalStep, ParallelStep, ProcessingStep],
                max_iterations: int,
                convergence_condition: Optional[str] = None) -> 'WorkflowBuilder':
         """Add a loop step to the workflow.
@@ -158,10 +160,39 @@ class WorkflowBuilder:
             description=description,
             step=step,
             max_iterations=max_iterations,
-            convergence_condition=convergence_condition
+            exit_condition=convergence_condition or "False"
         )
         
         self.workflow_def = self.workflow_def.add_step(loop_step)
+        return self
+        
+    def add_processing_step(self,
+                         name: str,
+                         description: str,
+                         processing_function: Callable[[Dict[str, Any]], Union[Any, Dict[str, Any], Awaitable[Any]]],
+                         context_data: Optional[Dict[str, Any]] = None) -> 'WorkflowBuilder':
+        """Add a processing step to the workflow.
+        
+        Args:
+            name: Step name
+            description: Step description
+            processing_function: Function to process data
+            context_data: Additional context data (optional)
+            
+        Returns:
+            Self for chaining
+        """
+        if not self.workflow_def:
+            raise ValueError("Workflow not created. Call create() first.")
+        
+        processing_step = ProcessingStep(
+            name=name,
+            description=description,
+            processing_function=processing_function,
+            context_data=context_data
+        )
+        
+        self.workflow_def = self.workflow_def.add_step(processing_step)
         return self
     
     def with_context(self, context: Dict[str, Any]) -> 'WorkflowBuilder':
@@ -174,6 +205,34 @@ class WorkflowBuilder:
             Self for chaining
         """
         self.initial_context = context
+        return self
+        
+    def build_step(self) -> StepBuilder:
+        """Create a step builder.
+        
+        Returns:
+            Step builder
+        """
+        self.step_builder = StepBuilder(self.registry)
+        return self.step_builder
+        
+    def add_step(self, step: Union[WorkflowStep, StepBuilder]) -> 'WorkflowBuilder':
+        """Add a step to the workflow.
+        
+        Args:
+            step: Step to add or step builder
+            
+        Returns:
+            Self for chaining
+        """
+        if not self.workflow_def:
+            raise ValueError("Workflow not created. Call create() first.")
+            
+        # Convert StepBuilder to WorkflowStep if needed
+        if isinstance(step, StepBuilder):
+            step = step.build()
+            
+        self.workflow_def = self.workflow_def.add_step(step)
         return self
     
     def build(self) -> WorkflowDefinition:
