@@ -86,7 +86,11 @@ class WorkflowEngine:
         # Check if state management is available and enabled
         checkpoint_manager = None
         if (auto_checkpoint or resume_from_checkpoint) and CheckpointManager is not None:
-            checkpoint_manager = self.service_registry.get("checkpoint_manager")
+            try:
+                checkpoint_manager = self.service_registry.get_service("checkpoint_manager")
+            except ValueError:
+                # Checkpoint manager is not registered
+                print("Warning: Checkpoint manager not found, auto checkpointing disabled")
         
         # Check for existing workflow checkpoint to resume
         resumed_workflow = None
@@ -102,7 +106,7 @@ class WorkflowEngine:
                     
                     # Restore from checkpoint
                     await checkpoint_manager.restore_checkpoint(
-                        self.service_registry.get("symphony_instance"),
+                        self.service_registry.get_service("symphony_instance"),
                         latest_checkpoint["id"]
                     )
                     
@@ -174,7 +178,7 @@ class WorkflowEngine:
         if checkpoint_manager:
             try:
                 checkpoint_id = await checkpoint_manager.create_checkpoint(
-                    self.service_registry.get("symphony_instance"),
+                    self.service_registry.get_service("symphony_instance"),
                     name=f"workflow_{workflow.id}_start",
                     metadata={
                         "workflow_id": workflow.id,
@@ -216,7 +220,7 @@ class WorkflowEngine:
                 if checkpoint_manager and (i > 0 and i % 3 == 0):  # Checkpoint every 3 steps
                     try:
                         checkpoint_id = await checkpoint_manager.create_checkpoint(
-                            self.service_registry.get("symphony_instance"),
+                            self.service_registry.get_service("symphony_instance"),
                             name=f"workflow_{workflow.id}_step_{i}",
                             metadata={
                                 "workflow_id": workflow.id,
@@ -250,7 +254,7 @@ class WorkflowEngine:
                     if checkpoint_manager:
                         try:
                             checkpoint_id = await checkpoint_manager.create_checkpoint(
-                                self.service_registry.get("symphony_instance"),
+                                self.service_registry.get_service("symphony_instance"),
                                 name=f"workflow_{workflow.id}_error",
                                 metadata={
                                     "workflow_id": workflow.id,
@@ -281,7 +285,7 @@ class WorkflowEngine:
                 if checkpoint_manager:
                     try:
                         checkpoint_id = await checkpoint_manager.create_checkpoint(
-                            self.service_registry.get("symphony_instance"),
+                            self.service_registry.get_service("symphony_instance"),
                             name=f"workflow_{workflow.id}_complete",
                             metadata={
                                 "workflow_id": workflow.id,
@@ -316,7 +320,7 @@ class WorkflowEngine:
             if checkpoint_manager:
                 try:
                     checkpoint_id = await checkpoint_manager.create_checkpoint(
-                        self.service_registry.get("symphony_instance"),
+                        self.service_registry.get_service("symphony_instance"),
                         name=f"workflow_{workflow.id}_exception",
                         metadata={
                             "workflow_id": workflow.id,
@@ -353,8 +357,11 @@ class WorkflowEngine:
         if CheckpointManager is None:
             return []
             
-        checkpoint_manager = self.service_registry.get("checkpoint_manager")
-        if not checkpoint_manager:
+        try:
+            checkpoint_manager = self.service_registry.get_service("checkpoint_manager")
+            if not checkpoint_manager:
+                return []
+        except ValueError:
             return []
             
         try:
@@ -365,8 +372,16 @@ class WorkflowEngine:
             import fnmatch
             matching = []
             for checkpoint in checkpoints:
-                if fnmatch.fnmatch(checkpoint.get("name", ""), name_pattern):
-                    matching.append(checkpoint)
+                # Convert Checkpoint objects to dictionaries for uniform access
+                if hasattr(checkpoint, 'to_dict'):
+                    # It's a Checkpoint object
+                    checkpoint_dict = checkpoint.to_dict()
+                    if fnmatch.fnmatch(checkpoint_dict.get("name", ""), name_pattern):
+                        matching.append(checkpoint_dict)
+                else:
+                    # It's already a dictionary
+                    if fnmatch.fnmatch(checkpoint.get("name", ""), name_pattern):
+                        matching.append(checkpoint)
                     
             return matching
             

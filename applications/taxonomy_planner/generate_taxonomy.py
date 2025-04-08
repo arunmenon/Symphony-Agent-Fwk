@@ -15,14 +15,14 @@ from typing import Dict, Any, List, Optional, Callable
 import sys
 import os
 
-# Add the parent directory of 'applications' to Python path
-symphony_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
-sys.path.insert(0, symphony_root)
+# Fix import issues by adding the current directory to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 
-# Now import using the proper paths
-from applications.taxonomy_planner.config import TaxonomyConfig
-# Import is kept for compatibility, but we're using direct model calls now
-# from applications.taxonomy_planner.main import generate_taxonomy
+# Now import using local imports
+from config import TaxonomyConfig
+from main import generate_taxonomy
 
 # Configure logging
 logging.basicConfig(
@@ -95,191 +95,87 @@ async def generate_compliance_taxonomy(
     output_path = os.path.join(output_dir, f"{category.lower().replace(' ', '_')}_taxonomy.json")
     storage_path = os.path.join(storage_dir, f"{category.lower().replace(' ', '_')}_store.json")
     
-    # Since the Symphony integration is still having issues,
-    # we'll generate a real taxonomy using the specified models directly
-    # This will use the actual models to generate content
+    # Set up configuration
+    config = TaxonomyConfig()
     
-    # Determine the appropriate model to use
-    actual_models = models or DEFAULT_MODELS
-    planner_model = actual_models.get("planner", "o1-mini")
+    # Configure search API if available
+    serapi_key = os.environ.get("SERAPI_API_KEY")
+    if serapi_key:
+        config.search_config["api_key"] = serapi_key
+        config.search_config["enable_search"] = True
+        logger.info("Search capability enabled with SerAPI key")
+    else:
+        logger.warning("SERAPI_API_KEY not found in environment. Search functionality will be disabled.")
+        config.search_config["enable_search"] = False
     
-    # Call OpenAI directly to plan the taxonomy structure
-    import openai
-    from openai import OpenAI
+    # Set custom models if provided
+    if models:
+        for agent_name, model_name in models.items():
+            config.set_model_for_agent(agent_name, model_name)
+            logger.info(f"Using {model_name} for {agent_name} agent")
     
-    # Import necessary libraries
-    openai_api_key = os.environ.get("OPENAI_API_KEY")
-    if not openai_api_key:
-        raise ValueError("OPENAI_API_KEY environment variable is not set")
-        
-    client = OpenAI(api_key=openai_api_key)
-    
-    # Plan the taxonomy structure
-    planning_prompt = f"""
-    Create a comprehensive taxonomy for {category}. 
-    
-    Your task is to develop a hierarchical taxonomy with the following characteristics:
-    1. Start with {category} as the root node
-    2. Create main subcategories that cover the domain thoroughly
-    3. For each subcategory, provide 3-5 sub-subcategories
-    4. Focus on creating a well-structured classification system
-    5. Consider regulatory and compliance aspects for {', '.join(jurisdictions)}
-    
-    Format your taxonomy as a nested JSON structure with:
-    - A 'name' field for each category
-    - A 'subcategories' array containing child categories
-    - A 'compliance' object with jurisdiction-specific regulatory information
-    - A 'legal' object with jurisdiction-specific legal requirements
-    
-    Start with 5-8 top-level categories under {category}.
-    """
-    
-    # Make the API call to generate the taxonomy
-    logger.info(f"Using {planner_model} to plan the taxonomy structure...")
-    
-    # Create an internal function to handle model-specific parameter differences
-    @tracer.trace_model_call
-    async def _generate_taxonomy_with_model(model_name, prompt_text):
-        """Internal function to generate taxonomy using the appropriate model with correct parameters."""
-        system_message = "You are a specialized AI assistant for creating detailed taxonomies with compliance and legal mappings."
-        
-        # Model-specific handling
-        if "o1" in model_name:
-            # o1 models have specific requirements
-            logger.info("Using o1-specific parameters")
-            # Only provide parameters that are supported by o1 models
-            return client.chat.completions.create(
-                model=model_name,
-                messages=[{"role": "user", "content": system_message + "\n\n" + prompt_text}]
-            )
-        else:
-            # Standard handling for other models (GPT, etc.)
-            logger.info("Using standard parameters")
-            return client.chat.completions.create(
-                model=model_name,
-                temperature=0.7,
-                max_tokens=4000,
-                messages=[
-                    {"role": "system", "content": system_message},
-                    {"role": "user", "content": prompt_text}
-                ]
-            )
-    
-    # Call the internal function with appropriate parameters
-    response = await _generate_taxonomy_with_model(planner_model, planning_prompt)
-    
-    taxonomy_json = response.choices[0].message.content
-    
-    # Try to extract the JSON structure from the response
-    try:
-        # Look for JSON structure in the text
-        import re
-        import json
-        
-        # Trace the raw model response
-        tracer.log_event("json_extraction_start", {
-            "raw_response": taxonomy_json[:1000] + "..." if len(taxonomy_json) > 1000 else taxonomy_json
-        })
-        
-        # Try to find JSON block if it's not a pure JSON response
-        json_match = re.search(r'```json\n([\s\S]*?)\n```', taxonomy_json)
-        if json_match:
-            taxonomy_json = json_match.group(1)
-            tracer.log_event("json_block_extracted", {
-                "extracted_json": taxonomy_json[:1000] + "..." if len(taxonomy_json) > 1000 else taxonomy_json
-            })
-        
-        # Clean up any potential issues
-        taxonomy_json = taxonomy_json.strip()
-        
-        # Parse the JSON
-        taxonomy = json.loads(taxonomy_json)
-        
-        # Trace successful parsing
-        tracer.log_event("json_parsing_success", {
-            "category_count": len(taxonomy.get("subcategories", [])),
-            "taxonomy_structure": {
-                "name": taxonomy.get("name"),
-                "subcategories_count": len(taxonomy.get("subcategories", [])),
-                "has_compliance": "compliance" in taxonomy,
-                "has_legal": "legal" in taxonomy
-            }
-        })
-    except Exception as e:
-        # If parsing fails, create a simple taxonomy structure with the content
-        logger.warning(f"Couldn't parse the model output as JSON: {e}")
-        
-        # Trace parsing failure
-        tracer.log_event("json_parsing_error", {
-            "error": str(e),
-            "raw_excerpt": taxonomy_json[:500] + "..." if len(taxonomy_json) > 500 else taxonomy_json
-        })
-        
-        taxonomy = {
-            "name": category,
-            "description": "Generated taxonomy",
-            "subcategories": [],
-            "metadata": {
-                "generated_at": datetime.now().isoformat(),
-                "model": planner_model,
-                "jurisdictions": jurisdictions
-            }
-        }
-        
-        # Add the raw response as a field for reference
-        taxonomy["raw_response"] = taxonomy_json
-    
-    # Add metadata if it doesn't exist
-    if "metadata" not in taxonomy:
-        taxonomy["metadata"] = {}
-    
-    # Update metadata
-    taxonomy["metadata"].update({
-        "generated_at": datetime.now().isoformat(),
-        "model": planner_model,
-        "max_depth": max_depth,
-        "breadth_limit": breadth_limit,
-        "strategy": strategy,
-        "jurisdictions": jurisdictions
-    })
-    
-    # Save the taxonomy to the specified output path
-    with open(output_path, 'w') as f:
-        json.dump(taxonomy, f, indent=2)
-    
-    # Log the final taxonomy output event
-    tracer.log_event("taxonomy_output", {
-        "category": category,
-        "output_path": output_path,
-        "subcategory_count": len(taxonomy.get("subcategories", [])),
-        "total_nodes": sum(len(cat.get("subcategories", [])) for cat in taxonomy.get("subcategories", [])) + len(taxonomy.get("subcategories", [])) + 1
-    })
-    
-    # Call cleanup to end the tracing session
-    tracer.cleanup()
-    
-    # Get trace file path
+    # Integrate with Symphony's tracing 
+    tracer_id = tracer.session_id
     trace_file = tracer.get_trace_file_path()
     
-    # Create a trace summary file for easy access
-    trace_summary_path = os.path.join(os.path.dirname(output_path), f"{category.lower().replace(' ', '_')}_trace.txt")
-    with open(trace_summary_path, 'w') as f:
-        f.write(f"Taxonomy generation trace for {category}\n")
-        f.write(f"Generated at: {datetime.now().isoformat()}\n")
-        f.write(f"Model: {planner_model}\n")
-        f.write(f"Jurisdictions: {', '.join(jurisdictions)}\n")
-        f.write(f"Output: {output_path}\n")
-        f.write(f"Trace file: {trace_file}\n")
-        f.write(f"Session ID: {tracer.session_id}\n")
-    
-    # Print summary
-    subcategory_count = len(taxonomy.get("subcategories", []))
-    logger.info(f"Generated {category} taxonomy with {subcategory_count} top-level categories")
-    logger.info(f"Saved to {output_path}")
-    logger.info(f"Trace saved to {trace_file}")
-    logger.info(f"Trace summary saved to {trace_summary_path}")
-    
-    return taxonomy
+    try:
+        # Use Symphony's workflow-based taxonomy generation
+        # This properly integrates all steps including search tools
+        taxonomy = await generate_taxonomy(
+            root_category=category,
+            jurisdictions=jurisdictions,
+            max_depth=max_depth,
+            breadth_limit=breadth_limit,
+            strategy=strategy,
+            output_path=output_path,
+            storage_path=storage_path,
+            config=config,
+            models=models or DEFAULT_MODELS
+        )
+        
+        # Create a trace summary file for easy access
+        trace_summary_path = os.path.join(os.path.dirname(output_path), f"{category.lower().replace(' ', '_')}_trace.txt")
+        with open(trace_summary_path, 'w') as f:
+            f.write(f"Taxonomy generation trace for {category}\n")
+            f.write(f"Generated at: {datetime.now().isoformat()}\n")
+            f.write(f"Model: {config.get_model_for_agent('planner')}\n")
+            f.write(f"Jurisdictions: {', '.join(jurisdictions)}\n")
+            f.write(f"Output: {output_path}\n")
+            f.write(f"Trace file: {trace_file}\n")
+            f.write(f"Session ID: {tracer_id}\n")
+            
+            # Extract search usage from metadata if available
+            search_used = taxonomy.get("metadata", {}).get("search_used", False)
+            search_results_count = taxonomy.get("metadata", {}).get("search_results_count", 0)
+            f.write(f"Search used: {search_used}\n")
+            if search_used and search_results_count > 0:
+                f.write(f"Search results count: {search_results_count}\n")
+        
+        # Print summary
+        subcategory_count = len(taxonomy.get("subcategories", []))
+        logger.info(f"Generated {category} taxonomy with {subcategory_count} top-level categories")
+        logger.info(f"Saved to {output_path}")
+        logger.info(f"Trace saved to {trace_file}")
+        logger.info(f"Trace summary saved to {trace_summary_path}")
+        
+        # Log search usage if available
+        search_used = taxonomy.get("metadata", {}).get("search_used", False)
+        search_results_count = taxonomy.get("metadata", {}).get("search_results_count", 0)
+        if search_used:
+            logger.info(f"Search was used with {search_results_count} search results incorporated")
+        else:
+            logger.info("Search was not used. To enable search, ensure the SERAPI_API_KEY environment variable is set correctly")
+        
+        return taxonomy
+        
+    except Exception as e:
+        logger.error(f"Error generating taxonomy with Symphony workflow: {e}")
+        
+        # Call cleanup to end the tracing session
+        tracer.cleanup()
+        
+        # Re-raise the exception to be handled by the caller
+        raise
 
 
 async def main():

@@ -195,12 +195,18 @@ class WorkflowFacade:
     
     async def execute_workflow(self, 
                             workflow: WorkflowDefinition, 
-                            initial_context: Dict[str, Any] = None) -> Workflow:
+                            initial_context: Dict[str, Any] = None,
+                            auto_checkpoint: bool = True,
+                            resume_from_checkpoint: bool = True,
+                            model_assignments: Optional[Dict[str, str]] = None) -> Workflow:
         """Execute a workflow.
         
         Args:
             workflow: Workflow definition
             initial_context: Initial context data (optional)
+            auto_checkpoint: Whether to automatically create checkpoints during execution
+            resume_from_checkpoint: Whether to try resuming from a checkpoint if available
+            model_assignments: Optional model assignments for specific steps
             
         Returns:
             Executed workflow
@@ -242,7 +248,13 @@ class WorkflowFacade:
             workflow_engine = self.registry.get_service("workflow_engine")
         
         # Execute workflow
-        return await workflow_engine.execute_workflow(workflow, initial_context)
+        return await workflow_engine.execute_workflow(
+            workflow_def=workflow, 
+            initial_context=initial_context,
+            auto_checkpoint=auto_checkpoint,
+            resume_from_checkpoint=resume_from_checkpoint,
+            model_assignments=model_assignments
+        )
     
     async def create_critic_revise_workflow(self,
                                         name: str,

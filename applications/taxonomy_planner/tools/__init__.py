@@ -13,7 +13,10 @@ from .search_tools import (
     search_legal_requirements
 )
 
-from ..config import TaxonomyConfig
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import TaxonomyConfig
 
 def register_tools(symphony: Symphony, config: TaxonomyConfig) -> None:
     """Register custom tools with Symphony.

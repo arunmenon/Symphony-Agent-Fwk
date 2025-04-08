@@ -25,35 +25,35 @@ class StepBuilder:
             registry: Service registry instance (optional)
         """
         self.registry = registry or ServiceRegistry.get_instance()
-        self.name = None
-        self.description = ""
+        self._name = None
+        self._description = ""
         self.step_type = None
         
         # TaskStep specific
-        self.agent = None
-        self.agent_type = None  # New: For agent creation by type
-        self.model = None  # New: Model identifier for the agent
-        self.task_text = None
-        self.pattern = None
-        self.output_key = None
+        self._agent = None
+        self._agent_type = None  # New: For agent creation by type
+        self._model = None  # New: Model identifier for the agent
+        self._task_text = None
+        self._pattern = None
+        self._output_key = None
         
         # ProcessingStep specific
-        self.processing_function = None
-        self.context_data = {}
+        self._processing_function = None
+        self._context_data = {}
         
         # ConditionalStep specific
-        self.condition = None
-        self.if_branch = None
-        self.else_branch = None
+        self._condition = None
+        self._if_branch = None
+        self._else_branch = None
         
         # ParallelStep specific
-        self.steps = []
-        self.max_concurrency = 5
+        self._steps = []
+        self._max_concurrency = 5
         
         # LoopStep specific
-        self.loop_step = None
-        self.exit_condition = "False"
-        self.max_iterations = 10
+        self._loop_step = None
+        self._exit_condition = "False"
+        self._max_iterations = 10
     
     def name(self, name: str) -> 'StepBuilder':
         """Set the name of the step.
@@ -64,7 +64,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.name = name
+        self._name = name
         return self
     
     def description(self, description: str) -> 'StepBuilder':
@@ -76,7 +76,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.description = description
+        self._description = description
         return self
     
     def agent(self, agent: Any) -> 'StepBuilder':
@@ -88,7 +88,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.agent = agent
+        self._agent = agent
         self.step_type = "task"
         return self
         
@@ -105,7 +105,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.agent_type = agent_type
+        self._agent_type = agent_type
         self.step_type = "task"
         return self
         
@@ -121,7 +121,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.model = model
+        self._model = model
         return self
     
     def task(self, task_text: str) -> 'StepBuilder':
@@ -133,7 +133,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.task_text = task_text
+        self._task_text = task_text
         self.step_type = "task"
         return self
     
@@ -146,7 +146,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.pattern = pattern
+        self._pattern = pattern
         return self
     
     def output_key(self, key: str) -> 'StepBuilder':
@@ -158,7 +158,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.output_key = key
+        self._output_key = key
         return self
     
     def processing_function(self, func: Callable[[Dict[str, Any]], Any]) -> 'StepBuilder':
@@ -170,7 +170,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.processing_function = func
+        self._processing_function = func
         self.step_type = "processing"
         return self
     
@@ -183,7 +183,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.context_data = data
+        self._context_data = data
         return self
     
     def condition(self, condition: str) -> 'StepBuilder':
@@ -195,7 +195,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.condition = condition
+        self._condition = condition
         self.step_type = "conditional"
         return self
     
@@ -208,7 +208,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.if_branch = step
+        self._if_branch = step
         return self
     
     def else_branch(self, step: Optional[WorkflowStep]) -> 'StepBuilder':
@@ -220,7 +220,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.else_branch = step
+        self._else_branch = step
         return self
     
     def add_step(self, step: WorkflowStep) -> 'StepBuilder':
@@ -232,7 +232,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.steps.append(step)
+        self._steps.append(step)
         self.step_type = "parallel"
         return self
     
@@ -245,7 +245,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.steps.extend(steps)
+        self._steps.extend(steps)
         self.step_type = "parallel"
         return self
     
@@ -258,7 +258,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.max_concurrency = max_concurrency
+        self._max_concurrency = max_concurrency
         return self
     
     def loop_step(self, step: WorkflowStep) -> 'StepBuilder':
@@ -270,7 +270,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.loop_step = step
+        self._loop_step = step
         self.step_type = "loop"
         return self
     
@@ -283,7 +283,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.exit_condition = condition
+        self._exit_condition = condition
         return self
     
     def max_iterations(self, max_iterations: int) -> 'StepBuilder':
@@ -295,7 +295,7 @@ class StepBuilder:
         Returns:
             Self for chaining
         """
-        self.max_iterations = max_iterations
+        self._max_iterations = max_iterations
         return self
     
     def build(self) -> WorkflowStep:
@@ -307,105 +307,105 @@ class StepBuilder:
         Raises:
             ValueError: If step type is not set or required parameters are missing
         """
-        if not self.name:
+        if not self._name:
             raise ValueError("Step name is required")
         
         if self.step_type == "task":
-            if not self.task_text:
+            if not self._task_text:
                 raise ValueError("Task text is required for task step")
             
             # Create task template
             task_template = {
-                "description": self.task_text
+                "description": self._task_text
             }
             
             # Add pattern if specified
-            if self.pattern:
-                pattern_name = getattr(self.pattern, "name", str(self.pattern))
+            if self._pattern:
+                pattern_name = getattr(self._pattern, "name", str(self._pattern))
                 task_template["pattern"] = pattern_name
             
             # Add output key if specified
-            if self.output_key:
-                task_template["output_key"] = self.output_key
+            if self._output_key:
+                task_template["output_key"] = self._output_key
             
             # Add context data if any
-            if self.context_data:
-                task_template["context_data"] = self.context_data
+            if self._context_data:
+                task_template["context_data"] = self._context_data
             
             # Add model information if specified
-            if self.model:
-                task_template["model"] = self.model
+            if self._model:
+                task_template["model"] = self._model
             
             # Handle agent information
             agent_id = None
-            if self.agent:
-                agent_id = self.agent.id if hasattr(self.agent, "id") else None
+            if self._agent:
+                agent_id = self._agent.id if hasattr(self._agent, "id") else None
                 
                 # If both agent instance and model are specified, also add model to template
                 # This allows overriding the agent's default model
-                if self.model and hasattr(self.agent, "model"):
-                    task_template["model"] = self.model
+                if self._model and hasattr(self._agent, "model"):
+                    task_template["model"] = self._model
                     
             # Add agent_type information if provided
-            if self.agent_type:
-                task_template["agent_type"] = self.agent_type
+            if self._agent_type:
+                task_template["agent_type"] = self._agent_type
                 
             # If no agent provided but agent_type and model are specified,
             # these will be used to create an agent instance during execution
             
             return TaskStep(
-                name=self.name,
-                description=self.description,
+                name=self._name,
+                description=self._description,
                 task_template=task_template,
                 agent_id=agent_id
             )
         
         elif self.step_type == "processing":
-            if not self.processing_function:
+            if not self._processing_function:
                 raise ValueError("Processing function is required for processing step")
             
             return ProcessingStep(
-                name=self.name,
-                description=self.description,
-                processing_function=self.processing_function,
-                context_data=self.context_data
+                name=self._name,
+                description=self._description,
+                processing_function=self._processing_function,
+                context_data=self._context_data
             )
         
         elif self.step_type == "conditional":
-            if not self.condition:
+            if not self._condition:
                 raise ValueError("Condition is required for conditional step")
-            if not self.if_branch:
+            if not self._if_branch:
                 raise ValueError("If branch is required for conditional step")
             
             return ConditionalStep(
-                name=self.name,
-                description=self.description,
-                condition=self.condition,
-                if_branch=self.if_branch,
-                else_branch=self.else_branch
+                name=self._name,
+                description=self._description,
+                condition=self._condition,
+                if_branch=self._if_branch,
+                else_branch=self._else_branch
             )
         
         elif self.step_type == "parallel":
-            if not self.steps:
+            if not self._steps:
                 raise ValueError("At least one step is required for parallel step")
             
             return ParallelStep(
-                name=self.name,
-                description=self.description,
-                steps=self.steps,
-                max_concurrency=self.max_concurrency
+                name=self._name,
+                description=self._description,
+                steps=self._steps,
+                max_concurrency=self._max_concurrency
             )
         
         elif self.step_type == "loop":
-            if not self.loop_step:
+            if not self._loop_step:
                 raise ValueError("Loop step is required for loop step")
             
             return LoopStep(
-                name=self.name,
-                description=self.description,
-                step=self.loop_step,
-                exit_condition=self.exit_condition,
-                max_iterations=self.max_iterations
+                name=self._name,
+                description=self._description,
+                step=self._loop_step,
+                exit_condition=self._exit_condition,
+                max_iterations=self._max_iterations
             )
         
         else:

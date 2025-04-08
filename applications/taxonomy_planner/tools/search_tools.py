@@ -7,8 +7,31 @@ import time
 import random
 import requests
 from typing import Dict, List, Any, Optional
+from datetime import datetime
 
-from ..config import TaxonomyConfig
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import TaxonomyConfig
+
+# Import search tracing plugin if available
+try:
+    from search_tracing_plugin import SearchTracingPlugin, get_traced_search_function
+    # Create tracing plugin instance
+    search_tracer = SearchTracingPlugin()
+    TRACING_ENABLED = True
+except ImportError:
+    TRACING_ENABLED = False
+
+# Configure detailed logging for search operations
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("search_calls.log"),
+        logging.StreamHandler()
+    ]
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,12 +82,39 @@ def serapi_search(query: str, config: TaxonomyConfig, num_results: int = 5) -> D
     Returns:
         Search results
     """
+    # Log search attempt with detailed information
+    search_id = f"search_{int(time.time())}"
+    logger.info(f"SEARCH_CALL_START - ID: {search_id} - Query: '{query}' - Num results: {num_results}")
+    
+    # Record search call details to track usage
+    with open("search_calls_record.jsonl", "a") as f:
+        f.write(json.dumps({
+            "id": search_id,
+            "timestamp": datetime.now().isoformat(),
+            "query": query,
+            "num_results": num_results,
+            "type": "search_call_start"
+        }) + "\n")
+    
     # Apply rate limiting
     RATE_LIMITER.wait_if_needed()
     
+    # Use tracing plugin if available
+    if TRACING_ENABLED:
+        search_tracer.log_search_request(query, num_results, search_id)
+    
     api_key = config.search_config.get("api_key")
     if not api_key:
-        logger.warning("SerAPI API key not found. Using mock data.")
+        logger.warning(f"SEARCH_CALL_ERROR - ID: {search_id} - SerAPI API key not found. Using mock data.")
+        
+        with open("search_calls_record.jsonl", "a") as f:
+            f.write(json.dumps({
+                "id": search_id,
+                "timestamp": datetime.now().isoformat(),
+                "error": "API key not found",
+                "type": "search_call_error"
+            }) + "\n")
+            
         return _mock_search_results(query)
     
     base_url = "https://serpapi.com/search"
@@ -76,11 +126,67 @@ def serapi_search(query: str, config: TaxonomyConfig, num_results: int = 5) -> D
     }
     
     try:
+        start_time = time.time()
         response = requests.get(base_url, params=params)
         response.raise_for_status()
-        return response.json()
+        result = response.json()
+        duration = time.time() - start_time
+        
+        # Log successful search
+        results_count = len(result.get("organic_results", []))
+        logger.info(f"SEARCH_CALL_SUCCESS - ID: {search_id} - Duration: {duration:.2f}s - Results: {results_count}")
+        
+        # Record successful search call
+        with open("search_calls_record.jsonl", "a") as f:
+            f.write(json.dumps({
+                "id": search_id,
+                "timestamp": datetime.now().isoformat(),
+                "duration": duration,
+                "results_count": results_count,
+                "type": "search_call_success"
+            }) + "\n")
+        
+        # Use tracing plugin if available
+        if TRACING_ENABLED:
+            search_tracer.log_search_response(
+                search_id=search_id,
+                duration=duration,
+                results_count=results_count,
+                success=True
+            )
+        
+        # Save sample of search results for compliance domains
+        if any(term in query.lower() for term in ["alcohol", "weapon", "nudity", "pharmaceutical", "drug", "compliance", "regulation"]):
+            clean_name = query.replace(" ", "_").replace("'", "").replace('"', "")[:50]
+            results_file = f"search_result_{clean_name}.json"
+            with open(results_file, "w") as f:
+                json.dump(result, f, indent=2)
+            logger.info(f"SEARCH_CALL_SAVED - ID: {search_id} - File: {results_file}")
+            
+        return result
+        
     except Exception as e:
-        logger.error(f"SerAPI search error: {e}")
+        logger.error(f"SEARCH_CALL_ERROR - ID: {search_id} - SerAPI search error: {e}")
+        
+        # Record error
+        with open("search_calls_record.jsonl", "a") as f:
+            f.write(json.dumps({
+                "id": search_id,
+                "timestamp": datetime.now().isoformat(),
+                "error": str(e),
+                "type": "search_call_error"
+            }) + "\n")
+            
+        # Use tracing plugin if available
+        if TRACING_ENABLED:
+            search_tracer.log_search_response(
+                search_id=search_id,
+                duration=time.time() - start_time,
+                results_count=0,
+                success=False,
+                error=str(e)
+            )
+            
         return _mock_search_results(query)
 
 def search_category_info(category: str, domain: str = "", config: TaxonomyConfig = None) -> Dict[str, Any]:

@@ -3,7 +3,7 @@
 from typing import Dict, Any
 
 from symphony import Symphony
-from .config import TaxonomyConfig
+from config import TaxonomyConfig
 
 def create_agents(symphony: Symphony, config: TaxonomyConfig) -> Dict[str, Any]:
     """Create specialized agents for taxonomy generation.

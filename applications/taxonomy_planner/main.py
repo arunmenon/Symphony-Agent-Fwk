@@ -9,11 +9,28 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional, Union
 
 from symphony import Symphony
-from .config import TaxonomyConfig
-from .agents import create_agents
-from .patterns import create_patterns, apply_pattern
-from .tools import register_tools
-from .persistence import TaxonomyStore
+from config import TaxonomyConfig
+from agents import create_agents
+from patterns import create_patterns, apply_pattern
+from tools import register_tools
+from persistence import TaxonomyStore
+
+def load_task_prompt(name):
+    """Load a task prompt from a text file.
+    
+    Args:
+        name: Name of the prompt file without extension
+        
+    Returns:
+        String content of the prompt
+    """
+    path = os.path.join(os.path.dirname(__file__), 'task-prompts', f'{name}.txt')
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        logging.warning(f"Task prompt file {path} not found")
+        return f"Generate content for {name}"
 
 logger = logging.getLogger(__name__)
 
@@ -77,13 +94,16 @@ class TaxonomyPlanner:
             description="Workflow for generating hierarchical taxonomies with compliance and legal mappings"
         )
         
-        # Planning step
+        # Planning step with externalized prompt and search tools
         planning_step = (workflow_builder.build_step()
             .name("Planning")
             .description("Plan the taxonomy structure")
             .agent(self.agents["planner"])
-            .task("Create a comprehensive taxonomy for {{root_category}}. Include main subcategories, important distinctions, and organization principles. Focus on creating a well-structured hierarchical taxonomy that could be further expanded.")
+            .task(load_task_prompt("planning"))
             .pattern(self.patterns["chain_of_thought"])
+            .context_data({
+                "tools": ["search_subcategories", "search_category_info"]
+            })
             .output_key("plan")
             .build()
         )
@@ -104,12 +124,12 @@ class TaxonomyPlanner:
         )
         workflow_builder.add_step(plan_processing_step)
         
-        # Exploration step (updated to use store)
+        # Exploration step with externalized prompt and search tools
         exploration_step = (workflow_builder.build_step()
             .name("Exploration")
             .description("Explore the taxonomy tree")
             .agent(self.agents["explorer"])
-            .task("Explore the taxonomy tree for {{root_category}} with initial categories: {{initial_categories}}")
+            .task(load_task_prompt("exploration"))
             .pattern(self.patterns["search_enhanced_exploration"])
             .context_data({
                 "category": "{{root_category}}",
@@ -127,12 +147,12 @@ class TaxonomyPlanner:
         )
         workflow_builder.add_step(exploration_step)
         
-        # Compliance mapping step (updated to use store)
+        # Compliance mapping step with externalized prompt
         compliance_step = (workflow_builder.build_step()
             .name("ComplianceMapping")
             .description("Map compliance requirements to taxonomy")
             .agent(self.agents["compliance"])
-            .task("Map compliance requirements for all categories")
+            .task(load_task_prompt("compliance"))
             .pattern(self.patterns["verify_execute"])
             .context_data({
                 "categories": self.store.get_all_nodes,
@@ -145,12 +165,12 @@ class TaxonomyPlanner:
         )
         workflow_builder.add_step(compliance_step)
         
-        # Legal mapping step (updated to use store)
+        # Legal mapping step with externalized prompt
         legal_step = (workflow_builder.build_step()
             .name("LegalMapping")
             .description("Map legal requirements to taxonomy")
             .agent(self.agents["legal"])
-            .task("Map legal requirements for all categories")
+            .task(load_task_prompt("legal"))
             .pattern(self.patterns["verify_execute"])
             .context_data({
                 "categories": self.store.get_all_nodes,
@@ -304,9 +324,8 @@ class TaxonomyPlanner:
         workflow_name = f"taxonomy_{root_category.lower().replace(' ', '_')}"
         
         # Execute workflow with automatic checkpointing and resumption
-        workflow_engine = self.symphony.workflows.get_engine()
-        workflow_result = await workflow_engine.execute_workflow(
-            workflow_def=self.workflow_definition,
+        workflow_result = await self.symphony.workflows.execute_workflow(
+            workflow=self.workflow_definition,
             initial_context=initial_context,
             auto_checkpoint=True,
             resume_from_checkpoint=True
@@ -337,10 +356,26 @@ class TaxonomyPlanner:
         if "metadata" not in taxonomy:
             taxonomy["metadata"] = {}
             
+        # Track search usage for reporting
+        search_used = False
+        search_results_count = 0
+        
+        # Check if the context has tools used info
+        if context.get("tools_used"):
+            # Check if any of the search tools were used
+            search_tools = ["search_subcategories", "search_category_info", 
+                           "search_compliance_requirements", "search_legal_requirements"]
+            for tool_name, count in context.get("tools_used", {}).items():
+                if tool_name in search_tools and count > 0:
+                    search_used = True
+                    search_results_count += count
+        
         taxonomy["metadata"].update({
             "generated_at": datetime.now().isoformat(),
             "max_depth": context.get("max_depth"),
-            "jurisdictions": context.get("jurisdictions", [])
+            "jurisdictions": context.get("jurisdictions", []),
+            "search_used": search_used,
+            "search_results_count": search_results_count
         })
         
         return taxonomy
