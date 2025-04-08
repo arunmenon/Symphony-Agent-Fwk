@@ -1,4 +1,4 @@
-"""Example usage of Taxonomy Planner application with state management."""
+"""Example usage of Taxonomy Planner application with enhanced features."""
 
 import asyncio
 import json
@@ -22,15 +22,19 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 async def run_example():
-    """Run the taxonomy planner example with state management."""
+    """Run the taxonomy planner example with enhanced features."""
     
     # Define output directory
     output_dir = os.path.join(os.path.dirname(__file__), "../applications/taxonomy_planner/output")
     os.makedirs(output_dir, exist_ok=True)
     
-    # Example 1: Generate a technology taxonomy using default settings with model assignments
-    # Note that we don't need to worry about state management - it's handled automatically
-    logger.info("\n=== Example 1: Technology Taxonomy with Model Assignments ===")
+    # Define storage directory for taxonomy store
+    storage_dir = os.path.join(os.path.dirname(__file__), "../applications/taxonomy_planner/storage")
+    os.makedirs(storage_dir, exist_ok=True)
+    
+    # Example 1: Generate a technology taxonomy using optimal model assignments
+    # with parallel exploration strategy for better performance
+    logger.info("\n=== Example 1: Technology Taxonomy with Parallel Exploration ===")
     
     # Define model assignments for different agents
     models = {
@@ -40,11 +44,14 @@ async def run_example():
         "legal": "openai/gpt-4o-mini"
     }
     
-    # Generate taxonomy with model assignments
+    # Generate taxonomy with model assignments and parallel exploration
     tech_taxonomy = await generate_taxonomy(
         root_category="Technology",
+        strategy="parallel",  # Use parallel exploration for better performance
+        breadth_limit=8,     # Limit breadth to prevent explosion
         output_path=os.path.join(output_dir, "technology_taxonomy.json"),
-        models=models  # Simply pass models as a parameter
+        storage_path=os.path.join(storage_dir, "technology_store.json"),
+        models=models
     )
     
     logger.info("Using different models for each agent:")
@@ -52,34 +59,46 @@ async def run_example():
         logger.info(f"  {agent.capitalize()}: {model}")
         
     logger.info(f"Generated Technology taxonomy with {len(tech_taxonomy['subcategories'])} top-level categories")
+    logger.info(f"Exploration strategy: parallel with breadth limit of 8")
     
-    # Example 2: Generate a pharmaceuticals taxonomy with custom configuration
-    logger.info("\n=== Example 2: Pharmaceuticals Taxonomy (Custom Config) ===")
+    # Example 2: Generate a pharmaceuticals taxonomy with depth-first exploration
+    # This approaches focuses on deep exploration of a few branches
+    logger.info("\n=== Example 2: Pharmaceuticals Taxonomy with Depth-First Exploration ===")
     
     # Create custom config for pharmaceuticals
     pharma_config = TaxonomyConfig()
-    pharma_config.max_depth = 3
+    pharma_config.max_depth = 4
     pharma_config.default_jurisdictions = ["USA", "EU", "Japan", "International"]
     
     # Add custom knowledge sources
     pharma_config.knowledge_sources.extend(["FDA Database", "EMA Database"])
     
-    # Generate taxonomy - state is automatically persisted and can be resumed
+    # Set pattern config for depth-first exploration
+    pharma_config.pattern_configs["recursive_exploration"] = {
+        "max_depth": 4,
+        "breadth_limit": 5  # Lower breadth limit for deeper exploration
+    }
+    
+    # Generate taxonomy with depth-first strategy
     pharma_taxonomy = await generate_taxonomy(
         root_category="Pharmaceuticals",
         jurisdictions=["USA", "EU", "Japan"],
-        max_depth=3,
+        max_depth=4,
+        breadth_limit=5,
+        strategy="depth_first",  # Use depth-first exploration
         output_path=os.path.join(output_dir, "pharma_taxonomy.json"),
+        storage_path=os.path.join(storage_dir, "pharma_store.json"),
         config=pharma_config
     )
     logger.info(f"Generated Pharmaceuticals taxonomy with {len(pharma_taxonomy['subcategories'])} top-level categories")
+    logger.info(f"Exploration strategy: depth-first with depth of 4 and breadth limit of 5")
     
-    # Example 3: Using the TaxonomyPlanner class directly with automatic state management
-    logger.info("\n=== Example 3: Using TaxonomyPlanner with Different Models ===")
+    # Example 3: Using breadth-first exploration for balanced taxonomy
+    logger.info("\n=== Example 3: Weapons Taxonomy with Breadth-First Exploration ===")
     
     # Create custom config for weapons
     weapons_config = TaxonomyConfig()
-    weapons_config.max_depth = 4
+    weapons_config.max_depth = 3
     weapons_config.default_jurisdictions = ["USA", "International"]
     
     # Define model assignments in a clean, declarative way
@@ -94,38 +113,55 @@ async def run_example():
     for agent_name, model in models.items():
         weapons_config.set_model_for_agent(agent_name, model)
     
-    # Create planner instance - state management is automatically enabled
+    # Create planner instance
     planner = TaxonomyPlanner(config=weapons_config)
-    await planner.setup()
+    await planner.setup(storage_path=os.path.join(storage_dir, "weapons_store.json"))
     
     # Log the model assignments
     logger.info("Model assignments:")
     for agent_name, model in models.items():
         logger.info(f"  {agent_name.capitalize()}: {model}")
     
-    # Generate taxonomy - if interrupted, it will resume from last checkpoint when run again
+    # Generate taxonomy with breadth-first exploration
     weapons_taxonomy = await planner.generate_taxonomy(
         root_category="Weapons",
         jurisdictions=["USA", "EU", "International"],
+        strategy="breadth_first",  # Use breadth-first exploration
+        max_depth=3,
+        breadth_limit=7,          # Moderate breadth limit for balanced exploration
         output_path=os.path.join(output_dir, "weapons_taxonomy.json")
     )
     logger.info(f"Generated Weapons taxonomy with {len(weapons_taxonomy['subcategories'])} top-level categories")
+    logger.info(f"Exploration strategy: breadth-first with depth of 3 and breadth limit of 7")
     
-    # Demonstrate workflow resumption
-    logger.info("\n=== Example 4: Resuming from interruption (simulation) ===")
-    logger.info("Simulating a new run that would resume from checkpoint if interrupted")
+    # Example 4: Demonstrating plan utilization and persistence
+    logger.info("\n=== Example 4: Foods Taxonomy with Plan Utilization and Persistence ===")
+    logger.info("This example demonstrates how the planner's output is utilized and taxonomy is persisted")
     
-    # Create a new planner instance but it will automatically find and resume any in-progress workflows
-    resume_planner = TaxonomyPlanner(config=weapons_config)
-    await resume_planner.setup()
+    # Create config
+    foods_config = TaxonomyConfig()
+    foods_config.max_depth = 3
     
-    # This would automatically resume if the previous run was interrupted
-    foods_taxonomy = await resume_planner.generate_taxonomy(
+    # This would automatically use the plan processing step and TaxonomyStore persistence
+    foods_taxonomy = await generate_taxonomy(
         root_category="Foods",
         jurisdictions=["USA", "EU", "Asia"],
-        output_path=os.path.join(output_dir, "foods_taxonomy.json")
+        strategy="parallel",
+        max_depth=3,
+        breadth_limit=6,
+        output_path=os.path.join(output_dir, "foods_taxonomy.json"),
+        storage_path=os.path.join(storage_dir, "foods_store.json"),
+        config=foods_config
     )
     logger.info(f"Generated Foods taxonomy with {len(foods_taxonomy['subcategories'])} top-level categories")
+    logger.info(f"Taxonomy persisted to disk at: {os.path.join(storage_dir, 'foods_store.json')}")
+    
+    # Display summary of enhancements
+    logger.info("\n=== Summary of Enhancements ===")
+    logger.info("1. Implemented TaxonomyStore with adjacency list structure for efficient persistence")
+    logger.info("2. Added plan processing step to utilize planner's strategic output")
+    logger.info("3. Improved exploration with parallel processing and breadth limiting")
+    logger.info("4. Added support for different exploration strategies (parallel, breadth-first, depth-first)")
     
     logger.info("\nAll taxonomies generated successfully!")
 

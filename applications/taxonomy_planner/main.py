@@ -4,6 +4,7 @@ import asyncio
 import os
 import json
 import logging
+import re
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Union
 
@@ -12,6 +13,7 @@ from .config import TaxonomyConfig
 from .agents import create_agents
 from .patterns import create_patterns, apply_pattern
 from .tools import register_tools
+from .persistence import TaxonomyStore
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +30,16 @@ class TaxonomyPlanner:
         self.symphony = Symphony(persistence_enabled=True)
         self.agents = {}
         self.patterns = {}
-        self.memory = None
+        self.store = None
         self.initialized = False
         self.workflow_definition = None
     
-    async def setup(self):
-        """Initialize Symphony and set up components."""
+    async def setup(self, storage_path: Optional[str] = None):
+        """Initialize Symphony and set up components.
+        
+        Args:
+            storage_path: Path to save taxonomy data (optional)
+        """
         if self.initialized:
             return
         
@@ -49,8 +55,12 @@ class TaxonomyPlanner:
         # Create patterns
         self.patterns = create_patterns()
         
-        # Create memory
-        self.memory = self.symphony.create_memory()
+        # Create taxonomy store with persistence
+        if not storage_path:
+            # Use default path in Symphony state directory
+            storage_path = ".symphony/taxonomy_planner_state/taxonomy_store.json"
+            
+        self.store = TaxonomyStore(storage_path=storage_path)
         
         # Create workflow definition for taxonomy generation
         self._create_workflow_definition()
@@ -71,31 +81,48 @@ class TaxonomyPlanner:
                 .name("Planning")
                 .description("Plan the taxonomy structure")
                 .agent(self.agents["planner"])
-                .task("{{root_category}}")
+                .task("Create a comprehensive taxonomy for {{root_category}}. Include main subcategories, important distinctions, and organization principles. Focus on creating a well-structured hierarchical taxonomy that could be further expanded.")
                 .pattern(self.patterns["chain_of_thought"])
                 .output_key("plan")
                 .build()
             )
-            # Exploration step
+            # NEW: Plan processing step
+            .add_step(
+                self.symphony.build_step()
+                .name("PlanProcessing")
+                .description("Process planner output and initialize taxonomy")
+                .processing_function(self._process_plan)
+                .context_data({
+                    "plan": "{{plan}}",
+                    "root_category": "{{root_category}}",
+                    "store": self.store
+                })
+                .output_key("initial_categories")
+                .build()
+            )
+            # Exploration step (updated to use store)
             .add_step(
                 self.symphony.build_step()
                 .name("Exploration")
                 .description("Explore the taxonomy tree")
                 .agent(self.agents["explorer"])
-                .task("Explore the taxonomy tree for {{root_category}}")
+                .task("Explore the taxonomy tree for {{root_category}} with initial categories: {{initial_categories}}")
                 .pattern(self.patterns["search_enhanced_exploration"])
                 .context_data({
                     "category": "{{root_category}}",
                     "parent": None,
-                    "memory": self.memory,
+                    "store": self.store,
                     "agent": self.agents["explorer"],
                     "tools": ["search_knowledge_base", "search_subcategories", "search_category_info"],
-                    "max_depth": "{{max_depth}}"
+                    "max_depth": "{{max_depth}}",
+                    "breadth_limit": "{{breadth_limit}}",
+                    "strategy": "{{strategy}}",
+                    "initial_categories": "{{initial_categories}}"
                 })
                 .output_key("exploration_result")
                 .build()
             )
-            # Compliance mapping step
+            # Compliance mapping step (updated to use store)
             .add_step(
                 self.symphony.build_step()
                 .name("ComplianceMapping")
@@ -104,14 +131,15 @@ class TaxonomyPlanner:
                 .task("Map compliance requirements for all categories")
                 .pattern(self.patterns["verify_execute"])
                 .context_data({
-                    "categories": "{{memory.get_all_nodes()}}",
+                    "categories": self.store.get_all_nodes,
                     "jurisdictions": "{{jurisdictions}}",
+                    "store": self.store,
                     "tools": ["get_compliance_requirements", "search_compliance_requirements"]
                 })
                 .output_key("compliance_results")
                 .build()
             )
-            # Legal mapping step
+            # Legal mapping step (updated to use store)
             .add_step(
                 self.symphony.build_step()
                 .name("LegalMapping")
@@ -120,8 +148,9 @@ class TaxonomyPlanner:
                 .task("Map legal requirements for all categories")
                 .pattern(self.patterns["verify_execute"])
                 .context_data({
-                    "categories": "{{memory.get_all_nodes()}}",
+                    "categories": self.store.get_all_nodes,
                     "jurisdictions": "{{jurisdictions}}",
+                    "store": self.store,
                     "tools": ["get_applicable_laws", "search_legal_requirements"]
                 })
                 .output_key("legal_results")
@@ -137,7 +166,7 @@ class TaxonomyPlanner:
                     "root_category": "{{root_category}}",
                     "compliance_results": "{{compliance_results}}",
                     "legal_results": "{{legal_results}}",
-                    "memory": "{{memory}}"
+                    "store": self.store
                 })
                 .output_key("taxonomy")
                 .build()
@@ -159,12 +188,69 @@ class TaxonomyPlanner:
         
         self.workflow_definition = workflow
     
+    async def _process_plan(self, context: Dict[str, Any]) -> List[str]:
+        """Process planner output to extract initial categories.
+        
+        This step analyzes the planner's output and extracts the key categories
+        to initialize the taxonomy structure.
+        
+        Args:
+            context: Workflow step context with plan and root category
+            
+        Returns:
+            List of initial categories
+        """
+        plan = context.get("plan", "")
+        root_category = context.get("root_category", "")
+        store = context.get("store")
+        
+        # Add root category to store if not already present
+        if not store.get_node(root_category):
+            store.add_node(root_category)
+        
+        # Extract categories from planner output
+        initial_categories = []
+        
+        # Look for list patterns in the plan
+        list_patterns = [
+            r'[\*\-•] ([^:\n]+)(?::|$)',  # Bullet points
+            r'^\d+\.\s+([^:\n]+)(?::|$)',  # Numbered lists
+            r'([A-Z][a-zA-Z\s]+)(?::|$)'   # Capitalized headers
+        ]
+        
+        # Combine extracted categories from different patterns
+        all_matches = []
+        for pattern in list_patterns:
+            matches = re.finditer(pattern, plan, re.MULTILINE)
+            for match in matches:
+                category = match.group(1).strip()
+                if category and len(category) > 2:
+                    # Filter out common non-category phrases
+                    if not category.lower().startswith(('here', 'this', 'these', 'those', 'the', 'a', 'an')):
+                        all_matches.append(category)
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        initial_categories = [cat for cat in all_matches if cat not in seen and not seen.add(cat)]
+        
+        # Add each category to the store
+        for category in initial_categories:
+            store.add_node(category, parent=root_category)
+            
+        # Save store to disk
+        store.save()
+        
+        return initial_categories
+    
     async def generate_taxonomy(
         self, 
         root_category: str, 
         jurisdictions: Optional[List[str]] = None,
         max_depth: Optional[int] = None,
-        output_path: Optional[str] = None
+        breadth_limit: Optional[int] = None,
+        strategy: str = "parallel",
+        output_path: Optional[str] = None,
+        storage_path: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate a taxonomy with compliance and legal mappings.
         
@@ -172,30 +258,39 @@ class TaxonomyPlanner:
             root_category: Root category of the taxonomy
             jurisdictions: List of jurisdictions to map
             max_depth: Maximum depth of taxonomy
+            breadth_limit: Maximum number of subcategories per node
+            strategy: Exploration strategy ('parallel', 'breadth_first', 'depth_first')
             output_path: Path to save the output JSON
+            storage_path: Path to save taxonomy store data
             
         Returns:
             Generated taxonomy
         """
         if not self.initialized:
-            await self.setup()
+            await self.setup(storage_path)
         
         # Use default jurisdictions if not provided
         jurisdictions = jurisdictions or self.config.default_jurisdictions
         
-        # Use configured max depth if not provided
+        # Use configured max depth and breadth if not provided
         effective_max_depth = max_depth if max_depth is not None else self.config.max_depth
+        effective_breadth_limit = breadth_limit if breadth_limit is not None else self.config.pattern_configs.get("recursive_exploration", {}).get("breadth_limit", 10)
         
-        # Add root node to memory
-        self.memory.add_node(root_category)
+        # Clear existing store data
+        self.store.clear()
+        
+        # Add root node to store
+        self.store.add_node(root_category)
         
         # Prepare initial context for workflow
         initial_context = {
             "root_category": root_category,
             "jurisdictions": jurisdictions,
             "max_depth": effective_max_depth,
+            "breadth_limit": effective_breadth_limit,
+            "strategy": strategy,
             "output_path": output_path,
-            "memory": self.memory
+            "store": self.store
         }
         
         # Generate workflow name based on category
@@ -226,88 +321,22 @@ class TaxonomyPlanner:
             Complete taxonomy tree
         """
         root_category = context.get("root_category")
-        compliance_data = context.get("compliance_results", {})
-        legal_data = context.get("legal_results", {})
-        memory = context.get("memory")
+        store = context.get("store")
         
-        # Initialize taxonomy with root node
-        taxonomy = {
-            "category": root_category,
-            "subcategories": [],
-            "compliance": {},
-            "legal": {},
-            "metadata": {
-                "generated_at": datetime.now().isoformat(),
-                "max_depth": context.get("max_depth"),
-                "jurisdictions": context.get("jurisdictions", [])
-            }
-        }
+        # Get the fully built taxonomy tree from the store
+        taxonomy = store.get_taxonomy_tree(root_category)
         
-        # Build tree recursively
-        await self._build_node(
-            taxonomy, 
-            root_category, 
-            None, 
-            compliance_data, 
-            legal_data, 
-            memory
-        )
+        # Add metadata
+        if "metadata" not in taxonomy:
+            taxonomy["metadata"] = {}
+            
+        taxonomy["metadata"].update({
+            "generated_at": datetime.now().isoformat(),
+            "max_depth": context.get("max_depth"),
+            "jurisdictions": context.get("jurisdictions", [])
+        })
         
         return taxonomy
-    
-    async def _build_node(
-        self, 
-        node: Dict[str, Any],
-        category: str, 
-        parent: Optional[str], 
-        compliance_data: Dict[str, Dict[str, Any]], 
-        legal_data: Dict[str, Dict[str, Any]],
-        memory
-    ) -> None:
-        """Build a single node and its children recursively.
-        
-        Args:
-            node: Current node to populate
-            category: Current category
-            parent: Parent category
-            compliance_data: Compliance data by category and jurisdiction
-            legal_data: Legal data by category and jurisdiction
-            memory: Symphony memory instance
-        """
-        # Get subcategories for this node
-        subcategories = memory.get_edges(category) or []
-        
-        # Get compliance and legal data for this category
-        if category in compliance_data:
-            node["compliance"] = compliance_data[category]
-        
-        if category in legal_data:
-            node["legal"] = legal_data[category]
-        
-        # Process subcategories recursively
-        for subcategory in subcategories:
-            child_node = {
-                "category": subcategory,
-                "subcategories": [],
-                "compliance": {},
-                "legal": {}
-            }
-            
-            if parent:
-                child_node["parent"] = parent
-            
-            # Process child recursively
-            await self._build_node(
-                child_node,
-                subcategory, 
-                category, 
-                compliance_data, 
-                legal_data,
-                memory
-            )
-            
-            # Add to parent's subcategories
-            node["subcategories"].append(child_node)
     
     async def _save_taxonomy(self, context: Dict[str, Any]) -> None:
         """Save taxonomy to a file.
@@ -336,7 +365,10 @@ async def generate_taxonomy(
     root_category: str,
     jurisdictions: Optional[List[str]] = None,
     max_depth: Optional[int] = None,
+    breadth_limit: Optional[int] = None,
+    strategy: str = "parallel",
     output_path: Optional[str] = None,
+    storage_path: Optional[str] = None,
     config: Optional[TaxonomyConfig] = None,
     **kwargs
 ) -> Dict[str, Any]:
@@ -346,7 +378,10 @@ async def generate_taxonomy(
         root_category: Root category of the taxonomy
         jurisdictions: List of jurisdictions to map
         max_depth: Maximum depth of taxonomy
+        breadth_limit: Maximum number of subcategories per node
+        strategy: Exploration strategy ('parallel', 'breadth_first', 'depth_first') 
         output_path: Path to save the output JSON
+        storage_path: Path to save taxonomy store data
         config: Custom configuration
         **kwargs: Additional configuration options
         
@@ -366,12 +401,15 @@ async def generate_taxonomy(
     
     # Create and set up planner
     planner = TaxonomyPlanner(config)
-    await planner.setup()
+    await planner.setup(storage_path)
     
     # Generate taxonomy
     return await planner.generate_taxonomy(
         root_category=root_category,
         jurisdictions=jurisdictions,
         max_depth=max_depth,
-        output_path=output_path
+        breadth_limit=breadth_limit,
+        strategy=strategy,
+        output_path=output_path,
+        storage_path=storage_path
     )
