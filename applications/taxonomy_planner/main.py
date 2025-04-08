@@ -337,7 +337,8 @@ async def generate_taxonomy(
     jurisdictions: Optional[List[str]] = None,
     max_depth: Optional[int] = None,
     output_path: Optional[str] = None,
-    config: Optional[TaxonomyConfig] = None
+    config: Optional[TaxonomyConfig] = None,
+    model_assignments: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
     """Generate a taxonomy with compliance and legal mappings.
     
@@ -347,13 +348,26 @@ async def generate_taxonomy(
         max_depth: Maximum depth of taxonomy
         output_path: Path to save the output JSON
         config: Custom configuration
+        model_assignments: Dictionary mapping agent names to model IDs
+                          (e.g., {"planner": "openai/gpt-4o", "explorer": "anthropic/claude-3-sonnet"})
         
     Returns:
         Generated taxonomy
     """
+    # Create config if not provided
+    if config is None:
+        config = TaxonomyConfig()
+    
+    # Apply model assignments if provided
+    if model_assignments:
+        for agent_name, model in model_assignments.items():
+            config.set_model_for_agent(agent_name, model)
+    
+    # Create and set up planner
     planner = TaxonomyPlanner(config)
     await planner.setup()
     
+    # Generate taxonomy
     return await planner.generate_taxonomy(
         root_category=root_category,
         jurisdictions=jurisdictions,

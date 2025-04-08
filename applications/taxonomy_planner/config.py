@@ -37,6 +37,38 @@ class TaxonomyConfig:
         }
     })
     
+    # Model overrides - allows specifying different models for each agent
+    model_overrides: Dict[str, str] = field(default_factory=dict)
+    
+    def set_model_for_agent(self, agent_name: str, model: str) -> None:
+        """Set a specific model for an agent.
+        
+        Args:
+            agent_name: Name of the agent (planner, explorer, compliance, legal)
+            model: Model to use (e.g., "openai/gpt-4o", "anthropic/claude-3-opus", etc.)
+        """
+        self.model_overrides[agent_name] = model
+        
+    def get_model_for_agent(self, agent_name: str) -> str:
+        """Get the model to use for a specific agent.
+        
+        Args:
+            agent_name: Name of the agent
+            
+        Returns:
+            Model name to use
+        """
+        # Check for override first, then fall back to agent config
+        if agent_name in self.model_overrides:
+            return self.model_overrides[agent_name]
+        
+        # Fall back to agent config if available
+        if agent_name in self.agent_configs and "model" in self.agent_configs[agent_name]:
+            return self.agent_configs[agent_name]["model"]
+            
+        # Default fallback
+        return "gpt-4"
+    
     # Pattern configurations
     pattern_configs: Dict[str, Dict[str, Any]] = field(default_factory=lambda: {
         "chain_of_thought": {
