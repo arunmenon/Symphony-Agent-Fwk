@@ -1,0 +1,10 @@
+Map compliance requirements for all categories in the {{root_category}} taxonomy.
+
+Your task:
+1. Identify compliance requirements for each category in the taxonomy
+2. Research regulatory bodies and standards that apply to each category
+3. Document specific compliance obligations
+4. Consider jurisdiction-specific regulations across {{jurisdictions}}
+5. Use both knowledge base and search tools to ensure accurate compliance information
+
+Focus on regulatory compliance, standards, and legal requirements that would affect each category.

@@ -1,17 +1,16 @@
 """Main implementation of Taxonomy Planner."""
 
-import asyncio
 import os
 import json
 import logging
 import re
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional
 
 from symphony import Symphony
 from config import TaxonomyConfig
 from agents import create_agents
-from patterns import create_patterns, apply_pattern
+from patterns import create_patterns
 from tools import register_tools
 from persistence import TaxonomyStore
 
@@ -27,10 +26,25 @@ def load_task_prompt(name):
     path = os.path.join(os.path.dirname(__file__), 'task-prompts', f'{name}.txt')
     try:
         with open(path) as f:
-            return f.read().strip()
+            content = f.read().strip()
+            logger.debug(f"Loaded task prompt '{name}' ({len(content)} chars)")
+            return content
     except FileNotFoundError:
-        logging.warning(f"Task prompt file {path} not found")
-        return f"Generate content for {name}"
+        logger.warning(f"Task prompt file {path} not found")
+        # Create a default prompt for testing
+        if name == "planning":
+            default = f"Plan a comprehensive taxonomy structure for {{{{root_category}}}}."
+        elif name == "exploration":
+            default = f"Explore subcategories for {{{{category}}}} with initial categories: {{{{initial_categories}}}}"
+        elif name == "compliance":
+            default = f"Map compliance requirements for all categories in {{{{root_category}}}} taxonomy."
+        elif name == "legal":
+            default = f"Map legal requirements for all categories in {{{{root_category}}}} taxonomy."
+        else:
+            default = f"Generate content for {name}"
+        
+        logger.warning(f"Using default prompt: {default}")
+        return default
 
 logger = logging.getLogger(__name__)
 
@@ -86,134 +100,148 @@ class TaxonomyPlanner:
     
     def _create_workflow_definition(self):
         """Create workflow definition for taxonomy generation process."""
-        workflow_builder = self.symphony.build_workflow()
+        try:
+            logger.debug("Starting workflow definition creation")
+            workflow_builder = self.symphony.build_workflow()
+            
+            # Start building the workflow
+            workflow_builder.create(
+                name="Taxonomy Generation Workflow",
+                description="Workflow for generating hierarchical taxonomies with compliance and legal mappings"
+            )
+            logger.debug("Workflow builder created successfully")
         
-        # Start building the workflow
-        workflow_builder.create(
-            name="Taxonomy Generation Workflow",
-            description="Workflow for generating hierarchical taxonomies with compliance and legal mappings"
-        )
-        
-        # Planning step with externalized prompt and search tools
-        planning_step = (workflow_builder.build_step()
-            .name("Planning")
-            .description("Plan the taxonomy structure")
-            .agent(self.agents["planner"])
-            .task(load_task_prompt("planning"))
-            .pattern(self.patterns["chain_of_thought"])
-            .context_data({
-                "tools": ["search_subcategories", "search_category_info"]
-            })
-            .output_key("plan")
-            .build()
-        )
-        workflow_builder.add_step(planning_step)
-        
-        # NEW: Plan processing step
-        plan_processing_step = (workflow_builder.build_step()
-            .name("PlanProcessing")
-            .description("Process planner output and initialize taxonomy")
-            .processing_function(self._process_plan)
-            .context_data({
-                "plan": "{{plan}}",
-                "root_category": "{{root_category}}",
-                "store": self.store
-            })
-            .output_key("initial_categories")
-            .build()
-        )
-        workflow_builder.add_step(plan_processing_step)
-        
-        # Exploration step with externalized prompt and search tools
-        exploration_step = (workflow_builder.build_step()
-            .name("Exploration")
-            .description("Explore the taxonomy tree")
-            .agent(self.agents["explorer"])
-            .task(load_task_prompt("exploration"))
-            .pattern(self.patterns["search_enhanced_exploration"])
-            .context_data({
-                "category": "{{root_category}}",
-                "parent": None,
-                "store": self.store,
-                "agent": self.agents["explorer"],
-                "tools": ["search_knowledge_base", "search_subcategories", "search_category_info"],
-                "max_depth": "{{max_depth}}",
-                "breadth_limit": "{{breadth_limit}}",
-                "strategy": "{{strategy}}",
-                "initial_categories": "{{initial_categories}}"
-            })
-            .output_key("exploration_result")
-            .build()
-        )
-        workflow_builder.add_step(exploration_step)
-        
-        # Compliance mapping step with externalized prompt
-        compliance_step = (workflow_builder.build_step()
-            .name("ComplianceMapping")
-            .description("Map compliance requirements to taxonomy")
-            .agent(self.agents["compliance"])
-            .task(load_task_prompt("compliance"))
-            .pattern(self.patterns["verify_execute"])
-            .context_data({
-                "categories": self.store.get_all_nodes,
-                "jurisdictions": "{{jurisdictions}}",
-                "store": self.store,
-                "tools": ["get_compliance_requirements", "search_compliance_requirements"]
-            })
-            .output_key("compliance_results")
-            .build()
-        )
-        workflow_builder.add_step(compliance_step)
-        
-        # Legal mapping step with externalized prompt
-        legal_step = (workflow_builder.build_step()
-            .name("LegalMapping")
-            .description("Map legal requirements to taxonomy")
-            .agent(self.agents["legal"])
-            .task(load_task_prompt("legal"))
-            .pattern(self.patterns["verify_execute"])
-            .context_data({
-                "categories": self.store.get_all_nodes,
-                "jurisdictions": "{{jurisdictions}}",
-                "store": self.store,
-                "tools": ["get_applicable_laws", "search_legal_requirements"]
-            })
-            .output_key("legal_results")
-            .build()
-        )
-        workflow_builder.add_step(legal_step)
-        
-        # Tree building step (using processing step instead of agent step)
-        tree_step = (workflow_builder.build_step()
-            .name("TreeBuilding")
-            .description("Build final taxonomy tree")
-            .processing_function(self._build_taxonomy_tree)
-            .context_data({
-                "root_category": "{{root_category}}",
-                "compliance_results": "{{compliance_results}}",
-                "legal_results": "{{legal_results}}",
-                "store": self.store
-            })
-            .output_key("taxonomy")
-            .build()
-        )
-        workflow_builder.add_step(tree_step)
-        
-        # Output step (using processing step)
-        output_step = (workflow_builder.build_step()
-            .name("SaveOutput")
-            .description("Save taxonomy to output file if path provided")
-            .processing_function(self._save_taxonomy)
-            .context_data({
-                "taxonomy": "{{taxonomy}}",
-                "output_path": "{{output_path}}"
-            })
-            .build()
-        )
-        workflow_builder.add_step(output_step)
-        
-        # Build the final workflow definition
-        self.workflow_definition = workflow_builder.build()
+            # Planning step with externalized prompt and search tools
+            planning_step = (workflow_builder.build_step()
+                .name("Planning")
+                .description("Plan the taxonomy structure")
+                .agent(self.agents["planner"])
+                .task(load_task_prompt("planning"))
+                .pattern(self.patterns["chain_of_thought"])
+                .context_data({
+                    "tools": ["search_subcategories", "search_category_info"]
+                })
+                .output_key("plan")
+                .build()
+            )
+            workflow_builder.add_step(planning_step)
+            
+            # NEW: Plan processing step
+            plan_processing_step = (workflow_builder.build_step()
+                .name("PlanProcessing")
+                .description("Process planner output and initialize taxonomy")
+                .processing_function(self._process_plan)
+                .context_data({
+                    "plan": "{{plan}}",
+                    "root_category": "{{root_category}}",
+                    "store": self.store
+                })
+                .output_key("initial_categories")
+                .build()
+            )
+            workflow_builder.add_step(plan_processing_step)
+            
+            # Exploration step with externalized prompt and search tools
+            exploration_step = (workflow_builder.build_step()
+                .name("Exploration")
+                .description("Explore the taxonomy tree")
+                .agent(self.agents["explorer"])
+                .task(load_task_prompt("exploration"))
+                .pattern(self.patterns["search_enhanced_exploration"])
+                .context_data({
+                    "category": "{{root_category}}",
+                    "parent": None,
+                    "store": self.store,
+                    "agent": self.agents["explorer"],
+                    "tools": ["search_knowledge_base", "search_subcategories", "search_category_info"],
+                    "max_depth": "{{max_depth}}",
+                    "breadth_limit": "{{breadth_limit}}",
+                    "strategy": "{{strategy}}",
+                    "initial_categories": "{{initial_categories}}"
+                })
+                .output_key("exploration_result")
+                .build()
+            )
+            workflow_builder.add_step(exploration_step)
+            
+            # Compliance mapping step with externalized prompt
+            compliance_step = (workflow_builder.build_step()
+                .name("ComplianceMapping")
+                .description("Map compliance requirements to taxonomy")
+                .agent(self.agents["compliance"])
+                .task(load_task_prompt("compliance"))
+                .pattern(self.patterns["verify_execute"])
+                .context_data({
+                    "categories": self.store.get_all_nodes,
+                    "jurisdictions": "{{jurisdictions}}",
+                    "store": self.store,
+                    "tools": ["get_compliance_requirements", "search_compliance_requirements"]
+                })
+                .output_key("compliance_results")
+                .build()
+            )
+            workflow_builder.add_step(compliance_step)
+            
+            # Legal mapping step with externalized prompt
+            legal_step = (workflow_builder.build_step()
+                .name("LegalMapping")
+                .description("Map legal requirements to taxonomy")
+                .agent(self.agents["legal"])
+                .task(load_task_prompt("legal"))
+                .pattern(self.patterns["verify_execute"])
+                .context_data({
+                    "categories": self.store.get_all_nodes,
+                    "jurisdictions": "{{jurisdictions}}",
+                    "store": self.store,
+                    "tools": ["get_applicable_laws", "search_legal_requirements"]
+                })
+                .output_key("legal_results")
+                .build()
+            )
+            workflow_builder.add_step(legal_step)
+            
+            # Tree building step (using processing step instead of agent step)
+            tree_step = (workflow_builder.build_step()
+                .name("TreeBuilding")
+                .description("Build final taxonomy tree")
+                .processing_function(self._build_taxonomy_tree)
+                .context_data({
+                    "root_category": "{{root_category}}",
+                    "compliance_results": "{{compliance_results}}",
+                    "legal_results": "{{legal_results}}",
+                    "store": self.store
+                })
+                .output_key("taxonomy")
+                .build()
+            )
+            workflow_builder.add_step(tree_step)
+            
+            # Output step (using processing step)
+            output_step = (workflow_builder.build_step()
+                .name("SaveOutput")
+                .description("Save taxonomy to output file if path provided")
+                .processing_function(self._save_taxonomy)
+                .context_data({
+                    "taxonomy": "{{taxonomy}}",
+                    "output_path": "{{output_path}}"
+                })
+                .build()
+            )
+            workflow_builder.add_step(output_step)
+            
+            # Build the final workflow definition
+            logger.debug("Building final workflow definition")
+            self.workflow_definition = workflow_builder.build()
+            logger.debug(f"Workflow definition created with {len(self.workflow_definition.steps)} steps")
+        except Exception as e:
+            logger.error(f"Error creating workflow definition: {e}")
+            # Create a minimal workflow definition for error recovery
+            logger.warning("Creating minimal workflow definition for recovery")
+            workflow_builder = self.symphony.build_workflow()
+            self.workflow_definition = workflow_builder.create(
+                name="Minimal Taxonomy Workflow",
+                description="Minimal workflow for error recovery"
+            ).build()
     
     async def _process_plan(self, context: Dict[str, Any]) -> List[str]:
         """Process planner output to extract initial categories.
@@ -309,6 +337,21 @@ class TaxonomyPlanner:
         # Add root node to store
         self.store.add_node(root_category)
         
+        # Create a direct taxonomy tree without workflow for debugging
+        logger.debug(f"Search config enabled: {self.config.search_config.get('enable_search', False)}")
+        logger.debug(f"Search API key configured: {bool(self.config.search_config.get('api_key'))}")
+        logger.debug(f"Workflow definition steps: {len(self.workflow_definition.steps)}")
+        
+        # Log all steps for debugging
+        try:
+            for i, step in enumerate(self.workflow_definition.steps):
+                if hasattr(step, 'name') and hasattr(step, 'description'):
+                    logger.debug(f"Step {i+1}: {step.name} - {step.description}")
+                else:
+                    logger.debug(f"Step {i+1}: {step}")
+        except Exception as e:
+            logger.error(f"Error listing workflow steps: {e}")
+        
         # Prepare initial context for workflow
         initial_context = {
             "root_category": root_category,
@@ -320,20 +363,59 @@ class TaxonomyPlanner:
             "store": self.store
         }
         
-        # Generate workflow name based on category
-        workflow_name = f"taxonomy_{root_category.lower().replace(' ', '_')}"
-        
-        # Execute workflow with automatic checkpointing and resumption
-        workflow_result = await self.symphony.workflows.execute_workflow(
-            workflow=self.workflow_definition,
-            initial_context=initial_context,
-            auto_checkpoint=True,
-            resume_from_checkpoint=True
-        )
-        
-        # Get final taxonomy from workflow result context
-        context = workflow_result.metadata.get("context", {})
-        taxonomy = context.get("taxonomy", {})
+        try:
+            # Execute workflow with automatic checkpointing and resumption
+            workflow_result = await self.symphony.workflows.execute_workflow(
+                workflow=self.workflow_definition,
+                initial_context=initial_context,
+                auto_checkpoint=True,
+                resume_from_checkpoint=True
+            )
+            
+            # Get final taxonomy from workflow result context
+            context = workflow_result.metadata.get("context", {})
+            taxonomy = context.get("taxonomy", {})
+            
+            # Additional logging for empty taxonomies
+            if not taxonomy or not taxonomy.get("subcategories"):
+                logger.warning(f"Empty taxonomy returned from workflow. Context keys: {list(context.keys())}")
+                
+                # Check if there were any errors in the workflow execution
+                if "errors" in context:
+                    logger.error(f"Workflow execution errors: {context['errors']}")
+                
+                # Verify the store has data after workflow execution
+                store_categories = self.store.get_all_nodes()
+                logger.debug(f"Store contains {len(store_categories)} categories after workflow execution")
+                
+                # If the workflow didn't produce a taxonomy but the store has data,
+                # generate one directly from the store
+                if len(store_categories) > 1:  # More than just the root node
+                    logger.info("Generating taxonomy directly from store")
+                    taxonomy = self.store.get_taxonomy_tree(root_category)
+                else:
+                    logger.warning("Store contains only the root node. Workflow steps did not populate the taxonomy.")
+        except Exception as e:
+            logger.error(f"Error executing workflow: {e}")
+            # Create a minimal valid taxonomy
+            taxonomy = {
+                "category": root_category,
+                "subcategories": [],
+                "compliance": {},
+                "legal": {},
+                "metadata": {
+                    "generated_at": datetime.now().isoformat(),
+                    "error": str(e),
+                    "note": "Error generating taxonomy"
+                }
+            }
+            
+            # If output path provided, save this minimal taxonomy
+            if output_path:
+                os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+                with open(output_path, 'w') as f:
+                    json.dump(taxonomy, f, indent=2)
+                logger.info(f"Minimal taxonomy saved to {output_path} after error")
         
         return taxonomy
     
@@ -355,6 +437,10 @@ class TaxonomyPlanner:
         # Add metadata
         if "metadata" not in taxonomy:
             taxonomy["metadata"] = {}
+        
+        # Generate dynamic compliance areas based on taxonomy content
+        compliance_areas = await self._generate_dynamic_compliance_areas(taxonomy, context)
+        taxonomy["metadata"]["compliance_areas"] = compliance_areas
             
         # Track search usage for reporting
         search_used = False
@@ -375,10 +461,151 @@ class TaxonomyPlanner:
             "max_depth": context.get("max_depth"),
             "jurisdictions": context.get("jurisdictions", []),
             "search_used": search_used,
-            "search_results_count": search_results_count
+            "search_results_count": search_results_count,
+            "domain": root_category
         })
         
         return taxonomy
+        
+    async def _generate_dynamic_compliance_areas(self, taxonomy: Dict[str, Any], context: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate dynamic compliance areas based on taxonomy content.
+        
+        This analyzes the taxonomy structure and content to identify appropriate
+        compliance dimensions that are relevant to this particular domain.
+        
+        Args:
+            taxonomy: Complete taxonomy tree
+            context: Workflow context
+            
+        Returns:
+            List of compliance areas with descriptions
+        """
+        # Use compliance agent to analyze taxonomy and suggest areas
+        if "compliance" not in self.agents:
+            return []
+            
+        compliance_agent = self.agents["compliance"]
+        category = taxonomy.get("category", "")
+        
+        # Create a concise version of the taxonomy to include in the prompt
+        simplified_taxonomy = self._simplify_taxonomy(taxonomy)
+        
+        # Prompt for dynamic compliance areas
+        prompt = (
+            f"Based on this taxonomy for '{category}', identify 5-8 key compliance areas or dimensions that are "
+            f"relevant across this domain. For each area, provide:\n"
+            f"1. Name of the compliance area\n"
+            f"2. Brief description\n"
+            f"3. Why it's important for this domain\n\n"
+            f"Simplified taxonomy:\n{simplified_taxonomy}\n\n"
+            f"Format as a list with each area clearly labeled."
+        )
+        
+        # Execute with compliance agent
+        result = await compliance_agent.execute(prompt)
+        
+        # Parse results to extract compliance areas
+        compliance_areas = []
+        
+        if isinstance(result, str):
+            # Process text to extract areas
+            sections = result.split("\n\n")
+            current_area = {}
+            
+            for section in sections:
+                if not section.strip():
+                    continue
+                    
+                # Check if this looks like a new compliance area
+                lines = [line.strip() for line in section.split("\n") if line.strip()]
+                
+                if len(lines) >= 2 and (lines[0].startswith(("1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.")) or 
+                                       lines[0].startswith("-") or
+                                       ":" in lines[0]):
+                    # This looks like a new area
+                    if current_area and "name" in current_area:
+                        compliance_areas.append(current_area)
+                    
+                    current_area = {"name": "", "description": "", "importance": ""}
+                    
+                    # Extract name from first line
+                    first_line = lines[0]
+                    if ":" in first_line:
+                        # Format: "Name: Description"
+                        name_part = first_line.split(":", 1)[0]
+                        # Remove any numbering or bullets
+                        name_part = re.sub(r'^[\d\.\-\*•]+\s*', '', name_part)
+                        current_area["name"] = name_part.strip()
+                    elif first_line.startswith(("1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.")) or first_line.startswith("-"):
+                        # Format: "1. Name" or "- Name"
+                        name_part = re.sub(r'^[\d\.\-\*•]+\s*', '', first_line)
+                        current_area["name"] = name_part.strip()
+                    
+                    # Process remaining lines for description and importance
+                    remaining_text = " ".join(lines[1:])
+                    
+                    # Look for importance markers
+                    importance_markers = ["important because", "important for", "significance", "critical for"]
+                    importance_parts = []
+                    description_parts = []
+                    
+                    for part in remaining_text.split(". "):
+                        if any(marker in part.lower() for marker in importance_markers):
+                            importance_parts.append(part)
+                        else:
+                            description_parts.append(part)
+                    
+                    if importance_parts:
+                        current_area["importance"] = ". ".join(importance_parts)
+                    if description_parts:
+                        current_area["description"] = ". ".join(description_parts)
+            
+            # Add the last area if it exists
+            if current_area and "name" in current_area:
+                compliance_areas.append(current_area)
+        
+        return compliance_areas
+        
+    def _simplify_taxonomy(self, taxonomy: Dict[str, Any], max_depth: int = 2, current_depth: int = 0) -> str:
+        """Create a simplified text representation of the taxonomy.
+        
+        Args:
+            taxonomy: Taxonomy tree or subtree
+            max_depth: Maximum depth to include
+            current_depth: Current depth in recursion
+            
+        Returns:
+            Text representation of simplified taxonomy
+        """
+        if not taxonomy:
+            return ""
+            
+        # Add indentation based on depth
+        indent = "  " * current_depth
+        
+        # Start with the category
+        result = f"{indent}- {taxonomy.get('category', 'Unknown')}"
+        
+        # Add description if available and not empty
+        description = taxonomy.get("description", "")
+        if description:
+            # Truncate long descriptions
+            if len(description) > 100:
+                description = description[:97] + "..."
+            result += f": {description}"
+        
+        result += "\n"
+        
+        # Recursively add subcategories if we haven't reached max depth
+        if current_depth < max_depth and "subcategories" in taxonomy:
+            for subcategory in taxonomy.get("subcategories", []):
+                result += self._simplify_taxonomy(
+                    subcategory, 
+                    max_depth=max_depth,
+                    current_depth=current_depth + 1
+                )
+        
+        return result
     
     async def _save_taxonomy(self, context: Dict[str, Any]) -> None:
         """Save taxonomy to a file.
@@ -391,7 +618,23 @@ class TaxonomyPlanner:
         
         if not path:
             # No output path, nothing to do
+            logger.warning("No output path provided, taxonomy not saved")
             return
+            
+        # Check if taxonomy is valid
+        if not taxonomy or not isinstance(taxonomy, dict):
+            logger.warning(f"Empty or invalid taxonomy: {taxonomy}. Creating default structure.")
+            # Create a minimal valid structure
+            taxonomy = {
+                "category": context.get("root_category", "Unknown"),
+                "subcategories": [],
+                "compliance": {},
+                "legal": {},
+                "metadata": {
+                    "generated_at": datetime.now().isoformat(),
+                    "note": "Default structure due to empty taxonomy result"
+                }
+            }
         
         # Create output directory if it doesn't exist
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)

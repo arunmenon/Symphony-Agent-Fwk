@@ -1,0 +1,20 @@
+Create a comprehensive taxonomy for {{root_category}}. 
+
+Your task:
+1. FIRST: Use the search_subcategories and search_category_info tools to gather current, authoritative information about {{root_category}}
+2. Research and identify the main categories within {{root_category}}
+3. Organize these into a logical hierarchical structure
+4. Include important subcategories for each main category
+5. For each category, provide:
+   - A brief description of the category
+   - Typical enforcement examples or challenges
+   - Social media trends related to this category
+   - Relative risk level (High, Medium, Low)
+   - Common detection methods
+6. Consider regulatory and compliance aspects for each category - use search tools for the latest regulatory information
+
+IMPORTANT: You MUST use search tools at least once to ensure your taxonomy contains up-to-date and accurate information. Do this by calling:
+- search_subcategories("{{root_category}}") for finding current subcategories
+- search_category_info("{{root_category}}", "compliance") for compliance-related information
+
+Focus on creating a well-structured hierarchical taxonomy that addresses regulatory compliance needs and could be further expanded. Your taxonomy should be comprehensive but adaptable to any domain - avoid making assumptions specific to particular industries unless those are part of the root category definition.

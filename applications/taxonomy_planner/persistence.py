@@ -7,8 +7,7 @@ persistence to disk. It uses an adjacency list representation for the taxonomy t
 import json
 import os
 import time
-from typing import Dict, List, Optional, Any, Set, Tuple
-from dataclasses import dataclass, field, asdict
+from typing import Dict, List, Optional, Any
 
 class TaxonomyStore:
     """Efficient storage for taxonomy structure with incremental persistence.
@@ -255,8 +254,22 @@ class TaxonomyStore:
             "legal": self.legal_mappings.get(root, {})
         }
         
-        # Add metadata
+        # Add the following enhanced fields to support comprehensive taxonomies
+        enhanced_structure = {
+            "description": "",
+            "enforcement_examples": [],
+            "social_media_trends": [],
+            "risk_level": "",
+            "detection_methods": []
+        }
+        
+        # Add metadata and any existing node data
         tree.update(self.nodes[root])
+        
+        # Add enhanced structure fields if they don't already exist
+        for key, default_value in enhanced_structure.items():
+            if key not in tree:
+                tree[key] = default_value
         
         # Build children recursively
         for child in self.edges.get(root, []):
