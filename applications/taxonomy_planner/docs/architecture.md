@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Taxonomy Planner is an advanced multi-agent system designed to generate comprehensive taxonomies for regulatory compliance across various domains and jurisdictions. It leverages Symphony's agent orchestration capabilities to create structured taxonomies with rich metadata that can be used for compliance classification, knowledge organization, and regulatory mapping.
+The Taxonomy Planner is an advanced multi-agent system designed to generate comprehensive taxonomies for regulatory compliance across various domains and jurisdictions. It leverages a structured workflow architecture to create organized taxonomies with rich metadata that can be used for compliance classification, knowledge organization, and regulatory mapping.
 
 ## Core Concepts
 
@@ -52,7 +52,7 @@ graph TB
    - Parameter parsing and validation
    - Execution flow control
 
-2. **Orchestration Layer** (`main.py`)
+2. **Workflow Layer** (`main.py`)
    - Workflow definition and execution
    - Agent creation and coordination
    - Context management between steps
@@ -80,7 +80,7 @@ The taxonomy generation follows this core workflow:
 sequenceDiagram
     participant User
     participant CLI as CLI/Scripts
-    participant Symphony as Symphony Orchestration
+    participant Workflow as Workflow Engine
     participant Planner as Planning Agent
     participant Explorer as Explorer Agent
     participant Compliance as Compliance Agent
@@ -88,58 +88,54 @@ sequenceDiagram
     participant Store as TaxonomyStore
 
     User->>CLI: Run generation with parameters
-    CLI->>Symphony: Initialize Symphony workflow
-    Symphony->>Planner: Create high-level taxonomy plan
-    Planner-->>Symphony: Return plan
-    Symphony->>Explorer: Expand taxonomy with subcategories
+    CLI->>Workflow: Initialize taxonomy workflow
+    Workflow->>Planner: Create high-level taxonomy plan
+    Planner-->>Workflow: Return plan
+    Workflow->>Explorer: Expand taxonomy with subcategories
     Explorer->>Explorer: Recursive exploration of subcategories
-    Explorer-->>Symphony: Return expanded taxonomy
-    Symphony->>Compliance: Map regulatory requirements
-    Compliance-->>Symphony: Return compliance mappings
-    Symphony->>Legal: Associate applicable laws
-    Legal-->>Symphony: Return legal mappings
-    Symphony->>Store: Persist final taxonomy
-    Store-->>Symphony: Confirm persistence
-    Symphony-->>CLI: Return generation result
+    Explorer-->>Workflow: Return expanded taxonomy
+    Workflow->>Compliance: Map regulatory requirements
+    Compliance-->>Workflow: Return compliance mappings
+    Workflow->>Legal: Associate applicable laws
+    Legal-->>Workflow: Return legal mappings
+    Workflow->>Store: Persist final taxonomy
+    Store-->>Workflow: Confirm persistence
+    Workflow-->>CLI: Return generation result
     CLI-->>User: Display summary and output location
 ```
 
-## Agent Execution Pattern
+## Agent Workflow Pattern
 
-The Taxonomy Planner implements Symphony's correct agent execution pattern:
+The Taxonomy Planner implements a structured agent execution workflow:
 
-```mermaid
-graph TD
-    A[1. Create Agent Builder] --> B[2. Configure Agent Properties]
-    B --> C[3. Build Agent]
-    C --> D[4. Save Agent to Repository]
-    D --> E[5. Create Task Builder]
-    E --> F[6. Configure Task Properties]
-    F --> G[7. Add Query with Context Vars]
-    G --> H[8. Build Task]
-    H --> I[9. Save Task to Repository]
-    I --> J[10. Create Workflow Step]
-    J --> K[11. Link Agent and Task]
-    K --> L[12. Configure Output Keys]
-    L --> M[13. Add to Workflow]
-    M --> N[14. Execute Workflow]
-    
-    classDef phase1 fill:#ffadad,stroke:#333,stroke-width:1px
-    classDef phase2 fill:#ffd6a5,stroke:#333,stroke-width:1px
-    classDef phase3 fill:#fdffb6,stroke:#333,stroke-width:1px
-    classDef phase4 fill:#caffbf,stroke:#333,stroke-width:1px
-    
-    class A,B,C,D phase1
-    class E,F,G,H,I phase2
-    class J,K,L,M phase3
-    class N phase4
-```
+1. **Agent Creation Phase**
+   - Create agent configuration
+   - Configure agent properties (role, instructions)
+   - Build agent instance
+   - Save agent to repository
+
+2. **Task Creation Phase**
+   - Create task definition
+   - Configure task properties
+   - Add query with context variables
+   - Build task instance
+   - Save task to repository
+
+3. **Workflow Assembly Phase**
+   - Create workflow step
+   - Link agent and task
+   - Configure output variables
+   - Add step to workflow definition
+
+4. **Execution Phase**
+   - Execute the complete workflow
+   - Process results
 
 This pattern ensures:
-- Proper agent persistence
-- Context sharing between workflow steps
+- Proper agent data persistence
+- Effective context sharing between workflow steps
 - Separation of agent capabilities from execution logic
-- Reusability of agents across workflows
+- Reusability of agents across different workflows
 
 ## Key Agent Interaction Patterns
 
@@ -224,7 +220,7 @@ The system supports two primary modes of operation:
 
 2. **Enhanced Mode**:
    - Additional taxonomy fields (description, enforcement_examples, etc.)
-   - Symphony workflow-based execution
+   - Advanced workflow-based execution
    - Custom JSON serialization with datetime support
 
 ### Command-Line Interface
@@ -264,13 +260,13 @@ The `TaxonomyStore` class provides:
 - JSON serialization
 - Hierarchical relationship management
 
-### Symphony Integration
+### Enhanced Mode Integration
 
-The enhanced mode leverages Symphony's workflow capabilities:
+The enhanced mode leverages the advanced workflow architecture:
 
 ```mermaid
 graph TD
-    A[Symphony Setup] -->|Configure| B[Patch Repository]
+    A[Workflow Setup] -->|Configure| B[Initialize Repository]
     B -->|Create| C[Planning Agent]
     B -->|Create| D[Explorer Agent]
     C -->|Build| E[Planning Step]

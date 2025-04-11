@@ -104,11 +104,11 @@ You can extend the Taxonomy Planner with specialized agents for specific domains
 In a suitable location (e.g., `agents.py` or a new file), define your specialized agent:
 
 ```python
-async def create_financial_analysis_agent(symphony, category: str, enhanced_fields: List[str]):
+async def create_financial_analysis_agent(workflow_system, category: str, enhanced_fields: List[str]):
     """Create a specialized agent for financial analysis."""
     
-    # Create agent using Symphony builder pattern
-    financial_agent_builder = symphony.build_agent()
+    # Create agent using builder pattern
+    financial_agent_builder = workflow_system.build_agent()
     financial_agent_builder.create(
         name="FinancialAnalysisAgent",
         role="Financial compliance cost analysis expert",
@@ -122,7 +122,7 @@ async def create_financial_analysis_agent(symphony, category: str, enhanced_fiel
     
     # Build and save the agent
     financial_agent = financial_agent_builder.build()
-    financial_agent_id = await symphony.agents.save_agent(financial_agent)
+    financial_agent_id = await workflow_system.agents.save_agent(financial_agent)
     
     return {
         "agent": financial_agent,
@@ -133,10 +133,10 @@ async def create_financial_analysis_agent(symphony, category: str, enhanced_fiel
 ### 2. Create a Task for the Agent
 
 ```python
-async def create_financial_analysis_task(symphony, category: str):
+async def create_financial_analysis_task(workflow_system, category: str):
     """Create a task for financial analysis."""
     
-    task_builder = symphony.build_task()
+    task_builder = workflow_system.build_task()
     task = task_builder.create(
         name="FinancialAnalysis",
         description=f"Analyze financial compliance implications for {category}"
@@ -146,7 +146,7 @@ async def create_financial_analysis_task(symphony, category: str):
         "Taxonomy: {{enhanced_taxonomy}}"
     ).build()
     
-    task_id = await symphony.tasks.save_task(task)
+    task_id = await workflow_system.tasks.save_task(task)
     return task_id
 ```
 
@@ -154,8 +154,8 @@ async def create_financial_analysis_task(symphony, category: str):
 
 ```python
 # Create the financial analysis agent and task
-financial_agent_data = await create_financial_analysis_agent(symphony, category, enhanced_fields)
-financial_task_id = await create_financial_analysis_task(symphony, category)
+financial_agent_data = await create_financial_analysis_agent(workflow_system, category, enhanced_fields)
+financial_task_id = await create_financial_analysis_task(workflow_system, category)
 
 # Add financial analysis step to workflow
 financial_step = (workflow_builder.build_step()
@@ -647,22 +647,22 @@ with open(output_path, 'w') as f:
     f.write(formatted_output)
 ```
 
-## Advanced Symphony Integration
+## Advanced Workflow Integration
 
-Implement advanced Symphony features for more sophisticated workflows.
+Implement advanced workflow features for more sophisticated taxonomies.
 
 ### 1. Implement Multi-Agent Collaboration Pattern
 
 ```python
-from symphony.patterns.multi_agent.expert_panel import ExpertPanelPattern
+from patterns.multi_agent.expert_panel import ExpertPanelPattern
 
-async def setup_expert_panel_workflow(symphony, category: str, domain: str, config: TaxonomyConfig):
+async def setup_expert_panel_workflow(workflow_system, category: str, domain: str, config: TaxonomyConfig):
     """Set up an expert panel workflow for domain expertise."""
     
     # Create multiple expert agents
-    legal_expert = await create_expert_agent(symphony, "Legal", category, domain)
-    regulatory_expert = await create_expert_agent(symphony, "Regulatory", category, domain)
-    industry_expert = await create_expert_agent(symphony, "Industry", category, domain)
+    legal_expert = await create_expert_agent(workflow_system, "Legal", category, domain)
+    regulatory_expert = await create_expert_agent(workflow_system, "Regulatory", category, domain)
+    industry_expert = await create_expert_agent(workflow_system, "Industry", category, domain)
     
     # Create expert panel pattern
     expert_panel = ExpertPanelPattern(
@@ -675,7 +675,7 @@ async def setup_expert_panel_workflow(symphony, category: str, domain: str, conf
     )
     
     # Create moderator agent with expert panel pattern
-    moderator_agent_builder = symphony.build_agent()
+    moderator_agent_builder = workflow_system.build_agent()
     moderator_agent_builder.create(
         name="ExpertPanelModerator",
         role="Moderator for expert panel taxonomy discussion",
@@ -686,7 +686,7 @@ async def setup_expert_panel_workflow(symphony, category: str, domain: str, conf
     ).with_pattern(expert_panel)
     
     moderator_agent = moderator_agent_builder.build()
-    moderator_agent_id = await symphony.agents.save_agent(moderator_agent)
+    moderator_agent_id = await workflow_system.agents.save_agent(moderator_agent)
     
     # Create task and workflow steps
     # ...
@@ -697,23 +697,23 @@ async def setup_expert_panel_workflow(symphony, category: str, domain: str, conf
 ### 2. Implement State Management for Long-Running Workflows
 
 ```python
-from symphony.core.state.checkpoint import CheckpointManager
+from core.state.checkpoint import CheckpointManager
 
-async def setup_checkpointed_workflow(symphony, category: str, config: TaxonomyConfig):
+async def setup_checkpointed_workflow(workflow_system, category: str, config: TaxonomyConfig):
     """Set up a workflow with checkpointing for long-running operations."""
     
     # Create and configure the CheckpointManager
     checkpoint_manager = CheckpointManager(
-        storage_dir=os.path.join(config.storage_dir, ".symphony", "checkpoints"),
+        storage_dir=os.path.join(config.storage_dir, ".workflow", "checkpoints"),
         checkpoint_interval=5 * 60,  # Checkpoint every 5 minutes
         max_checkpoints=5  # Keep 5 most recent checkpoints
     )
     
-    # Register the checkpoint manager with Symphony
-    symphony.register_component("checkpoint_manager", checkpoint_manager)
+    # Register the checkpoint manager with workflow system
+    workflow_system.register_component("checkpoint_manager", checkpoint_manager)
     
     # Create workflow with checkpointing
-    workflow_builder = symphony.build_workflow()
+    workflow_builder = workflow_system.build_workflow()
     workflow_builder.create(
         name=f"CheckpointedTaxonomyGeneration_{category}",
         description=f"Generate taxonomy for {category} with checkpointing"
@@ -728,13 +728,13 @@ async def setup_checkpointed_workflow(symphony, category: str, config: TaxonomyC
     # Execute with checkpoint restoration if available
     checkpoint_id = config.get("restore_checkpoint_id")
     if checkpoint_id:
-        result = await symphony.workflows.execute_workflow(
+        result = await workflow_system.workflows.execute_workflow(
             workflow=workflow,
             initial_context={"category": category},
             restore_from_checkpoint=checkpoint_id
         )
     else:
-        result = await symphony.workflows.execute_workflow(
+        result = await workflow_system.workflows.execute_workflow(
             workflow=workflow,
             initial_context={"category": category}
         )
@@ -742,12 +742,12 @@ async def setup_checkpointed_workflow(symphony, category: str, config: TaxonomyC
     return result
 ```
 
-### 3. Implement Custom Symphony Plugins
+### 3. Implement Custom Workflow Plugins
 
 ```python
-from symphony.core.plugin import SymphonyPlugin
+from core.plugin import WorkflowPlugin
 
-class TaxonomyMetricsPlugin(SymphonyPlugin):
+class TaxonomyMetricsPlugin(WorkflowPlugin):
     """Plugin for collecting and analyzing taxonomy generation metrics."""
     
     def __init__(self, config: Dict[str, Any] = None):
@@ -819,8 +819,8 @@ This extension guide demonstrates the flexibility and extensibility of the Taxon
 
 Remember to:
 - Maintain the core workflow architecture when extending
-- Follow Symphony's agent execution pattern for compatibility
+- Follow the established agent execution pattern for compatibility
 - Add comprehensive tests for new functionality
 - Document your extensions thoroughly
 
-For more information on Symphony integration, refer to the [Symphony API documentation](https://docs.symphony.example/api).
+For more information on the workflow architecture, refer to the main architecture documentation.
