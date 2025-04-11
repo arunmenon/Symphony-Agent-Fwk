@@ -238,30 +238,43 @@ async def generate_compliance_taxonomy(
             
             # Planning agent
             planning_agent_builder = symphony.build_agent()
+            # Import the PromptLoader utility
+            from utils.prompt_utils import get_app_template_loader
+            
+            # Get prompt loader
+            prompt_loader = get_app_template_loader()
+            
+            # Format the instruction template using the externalized template file
+            instruction_template = prompt_loader.format_template(
+                "planning-agent",
+                category=category,
+                enhanced_fields=', '.join(enhanced_fields),
+                jurisdictions=', '.join(jurisdictions)
+            )
+            
             planning_agent_builder.create(
                 name="TaxonomyPlanner",
                 role="Planning comprehensive taxonomies",
-                instruction_template=(
-                    f"Develop a hierarchical taxonomy plan for the domain: {category}. "
-                    f"Include categories, subcategories, and plan for enhanced fields: "
-                    f"{', '.join(enhanced_fields)}. "
-                    f"Consider the following jurisdictions: {', '.join(jurisdictions)}."
-                )
+                instruction_template=instruction_template
             )
             planning_agent = planning_agent_builder.build()
             planning_agent_id = await symphony.agents.save_agent(planning_agent)
             
             # Explorer agent
             explorer_agent_builder = symphony.build_agent()
+            
+            # Format the explorer instruction template using the externalized template file
+            explorer_instruction_template = prompt_loader.format_template(
+                "explorer-agent",
+                category=category,
+                enhanced_fields=', '.join(enhanced_fields),
+                jurisdictions=', '.join(jurisdictions)
+            )
+            
             explorer_agent_builder.create(
                 name="TaxonomyExplorer",
                 role="Exploring and expanding taxonomy categories",
-                instruction_template=(
-                    f"Explore the given taxonomy category and identify subcategories for: {category}. "
-                    f"Research each category to provide enhanced metadata including: "
-                    f"{', '.join(enhanced_fields)}. "
-                    f"Consider regulations in these jurisdictions: {', '.join(jurisdictions)}"
-                )
+                instruction_template=explorer_instruction_template
             )
             explorer_agent = explorer_agent_builder.build()
             explorer_agent_id = await symphony.agents.save_agent(explorer_agent)

@@ -1,0 +1,3 @@
+Develop a hierarchical taxonomy plan for the domain: ${category}.
+Include categories, subcategories, and plan for enhanced fields: ${enhanced_fields}.
+Consider the following jurisdictions: ${jurisdictions}.
