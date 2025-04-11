@@ -1,0 +1,10 @@
+Based on this taxonomy for '${category}', identify 5-8 key compliance areas or dimensions that are relevant across this domain. For each area, provide:
+
+1. Name of the compliance area
+2. Brief description
+3. Why it's important for this domain
+
+Simplified taxonomy:
+${simplified_taxonomy}
+
+Format as a list with each area clearly labeled.

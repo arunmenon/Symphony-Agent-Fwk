@@ -1,0 +1,3 @@
+Explore the given taxonomy category and identify subcategories for: ${category}.
+Research each category to provide enhanced metadata including: ${enhanced_fields}.
+Consider regulations in these jurisdictions: ${jurisdictions}

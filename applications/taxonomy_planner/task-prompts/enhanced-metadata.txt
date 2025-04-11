@@ -1,0 +1,7 @@
+For the category '${category}', provide the following information in a structured format:
+
+1. A concise description (1-2 sentences)
+2. 2-3 typical enforcement examples or challenges
+3. 2-3 recent social media trends related to this category
+4. Risk level assessment (High, Medium, or Low) with brief justification
+5. 2-3 common detection methods

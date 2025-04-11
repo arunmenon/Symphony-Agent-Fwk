@@ -23,15 +23,18 @@ def load_task_prompt(name):
     Returns:
         String content of the prompt
     """
-    path = os.path.join(os.path.dirname(__file__), 'task-prompts', f'{name}.txt')
-    try:
-        with open(path) as f:
-            content = f.read().strip()
-            logger.debug(f"Loaded task prompt '{name}' ({len(content)} chars)")
-            return content
-    except FileNotFoundError:
-        logger.warning(f"Task prompt file {path} not found")
-        # Create a default prompt for testing
+    # Load the template using PromptLoader
+    from utils.prompt_utils import get_app_template_loader
+    
+    loader = get_app_template_loader()
+    template_content = loader.load_template(name)
+    
+    if template_content:
+        logger.debug(f"Loaded task prompt '{name}' ({len(template_content)} chars)")
+        return template_content
+    else:
+        logger.warning(f"Task prompt '{name}' not found")
+        # Create a default prompt for testing (keeping backward compatibility)
         if name == "planning":
             default = f"Plan a comprehensive taxonomy structure for {{{{root_category}}}}."
         elif name == "exploration":
@@ -490,15 +493,14 @@ class TaxonomyPlanner:
         # Create a concise version of the taxonomy to include in the prompt
         simplified_taxonomy = self._simplify_taxonomy(taxonomy)
         
-        # Prompt for dynamic compliance areas
-        prompt = (
-            f"Based on this taxonomy for '{category}', identify 5-8 key compliance areas or dimensions that are "
-            f"relevant across this domain. For each area, provide:\n"
-            f"1. Name of the compliance area\n"
-            f"2. Brief description\n"
-            f"3. Why it's important for this domain\n\n"
-            f"Simplified taxonomy:\n{simplified_taxonomy}\n\n"
-            f"Format as a list with each area clearly labeled."
+        # Get prompt for dynamic compliance areas using PromptLoader
+        from utils.prompt_utils import get_app_template_loader
+        
+        prompt_loader = get_app_template_loader()
+        prompt = prompt_loader.format_template(
+            "compliance-areas",
+            category=category,
+            simplified_taxonomy=simplified_taxonomy
         )
         
         # Execute with compliance agent

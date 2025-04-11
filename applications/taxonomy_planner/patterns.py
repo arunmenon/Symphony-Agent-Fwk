@@ -113,13 +113,12 @@ class SearchEnhancedExplorationPattern(RecursiveToolUsePattern):
         final_subcategories = self._extract_subcategories(validation_result)
         
         # Step 7: Gather enhanced information for the current category
-        enhanced_info_prompt = (
-            f"For the category '{category}', provide the following information in a structured format:\n"
-            f"1. A concise description (1-2 sentences)\n"
-            f"2. 2-3 typical enforcement examples or challenges\n"
-            f"3. 2-3 recent social media trends related to this category\n"
-            f"4. Risk level assessment (High, Medium, or Low) with brief justification\n"
-            f"5. 2-3 common detection methods"
+        from utils.prompt_utils import get_app_template_loader
+        
+        prompt_loader = get_app_template_loader()
+        enhanced_info_prompt = prompt_loader.format_template(
+            "enhanced-metadata",
+            category=category
         )
         
         enhanced_info = await agent.execute(
