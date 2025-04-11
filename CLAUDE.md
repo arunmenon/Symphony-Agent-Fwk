@@ -37,6 +37,73 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Structure commits logically around related changes
 - Keep commits focused on single concerns
 
+## Prompt Template Guidelines
+
+### Externalize All Prompt Templates
+- **NEVER hardcode prompt templates in Python files**
+- Always use external template files stored in a centralized location
+- Place prompt templates in appropriate directories:
+  - `task-prompts/` for agent task instructions
+  - `system-prompts/` for system instructions
+  - `example-prompts/` for few-shot examples
+
+### Template Organization
+- Group templates by functional area (planning, exploration, etc.)
+- Use descriptive filenames that indicate purpose (e.g., `category_planning.txt`)
+- Include version information in template files when making significant changes
+- Document template variables with comments
+
+### Template Loading
+- Create a dedicated template loader that:
+  - Caches templates for performance
+  - Validates required variables
+  - Handles template not found errors gracefully
+- Example implementation:
+```python
+def load_prompt_template(template_name: str) -> str:
+    """Load prompt template from filesystem.
+    
+    Args:
+        template_name: Name of template file without directory or extension
+        
+    Returns:
+        Template content as string
+        
+    Raises:
+        TemplateNotFoundError: If template cannot be found
+    """
+    template_path = os.path.join(TEMPLATE_DIR, f"{template_name}.txt")
+    if not os.path.exists(template_path):
+        raise TemplateNotFoundError(f"Template {template_name} not found at {template_path}")
+        
+    with open(template_path, "r") as f:
+        return f.read()
+```
+
+### Template Variable Substitution
+- Use a consistent method for variable substitution
+- Prefer named placeholders over positional formatting
+- Consider using a template engine like Jinja2 for complex templates
+- Example usage:
+```python
+# Load template
+planning_template = load_prompt_template("planning")
+
+# Format template with variables
+formatted_prompt = planning_template.format(
+    category=category,
+    enhanced_fields=", ".join(enhanced_fields),
+    jurisdictions=", ".join(jurisdictions)
+)
+```
+
+### Template Refactoring Process
+1. Identify all hardcoded templates in the codebase
+2. Extract each template to an appropriate external file
+3. Update code to load and format the external template
+4. Add validation for required template variables
+5. Document the template's purpose and variables
+
 ## Symphony Architecture Blueprint
 
 ### Core Primitives and Abstractions
