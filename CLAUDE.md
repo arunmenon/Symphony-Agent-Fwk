@@ -28,6 +28,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Line length: 100 characters max
 - Follow PEP 8 style guidelines
 
+## Git Commit Guidelines
+- Write concise, descriptive commit messages
+- Focus on the "why" rather than just the "what"
+- Use present tense (e.g., "Add feature" not "Added feature")
+- NEVER include Claude Code or any AI assistant attribution in commit messages
+- CRITICAL: Do not mention AI or Claude in commit messages or metadata
+- Structure commits logically around related changes
+- Keep commits focused on single concerns
+
 ## Symphony Architecture Blueprint
 
 ### Core Primitives and Abstractions
