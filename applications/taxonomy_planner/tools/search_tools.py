@@ -200,19 +200,43 @@ def search_category_info(category: str, domain: str = "", config: TaxonomyConfig
     Returns:
         Category information from search
     """
-    if not config or not config.search_config.get("enable_search", True):
-        return {"category": category, "results": []}
+    logger.debug(f"search_category_info called for '{category}' with domain '{domain}'")
+    
+    if not config:
+        logger.warning(f"search_category_info: No config provided for '{category}'")
+        return {"category": category, "results": [], "error": "No config provided"}
+        
+    if not config.search_config.get("enable_search", True):
+        logger.warning(f"search_category_info: Search disabled in config for '{category}'")
+        return {"category": category, "results": [], "error": "Search disabled in config"}
+        
+    if not config.search_config.get("api_key"):
+        logger.warning(f"search_category_info: No API key in config for '{category}'")
+        return {"category": category, "results": [], "error": "No API key in config"}
+    
+    # Log the raw API key (first 10 chars) for debugging
+    api_key = config.search_config.get("api_key", "")
+    if api_key:
+        logger.debug(f"search_category_info: Using API key starting with: {api_key[:10]}...")
     
     query = f"{category} {domain} classification"
+    logger.debug(f"search_category_info: Executing query: '{query}'")
+    
     results = serapi_search(query, config)
     
-    return {
+    # Log result summary
+    organic_results = results.get("organic_results", [])
+    logger.debug(f"search_category_info: Received {len(organic_results)} organic results")
+    
+    response = {
         "category": category,
         "query": query,
-        "results": results.get("organic_results", []),
+        "results": organic_results,
         "knowledge_panel": results.get("knowledge_graph", {}),
         "related_searches": results.get("related_searches", [])
     }
+    
+    return response
 
 def search_subcategories(category: str, config: TaxonomyConfig = None) -> List[str]:
     """Search for subcategories of a category.
@@ -224,20 +248,46 @@ def search_subcategories(category: str, config: TaxonomyConfig = None) -> List[s
     Returns:
         List of potential subcategories
     """
-    if not config or not config.search_config.get("enable_search", True):
+    logger.debug(f"search_subcategories called for '{category}'")
+    
+    if not config:
+        logger.warning(f"search_subcategories: No config provided for '{category}'")
         return []
+        
+    if not config.search_config.get("enable_search", True):
+        logger.warning(f"search_subcategories: Search disabled in config for '{category}'")
+        return []
+        
+    if not config.search_config.get("api_key"):
+        logger.warning(f"search_subcategories: No API key in config for '{category}'")
+        return []
+        
+    # Log the raw API key (first 10 chars) for debugging  
+    api_key = config.search_config.get("api_key", "")
+    if api_key:
+        logger.debug(f"search_subcategories: Using API key starting with: {api_key[:10]}...")
     
     query = f"{category} types OR subcategories OR classification"
+    logger.debug(f"search_subcategories: Executing query: '{query}'")
+    
     results = serapi_search(query, config)
     
     # Extract potential subcategories from search results
     subcategories = _extract_subcategories(results, category)
+    logger.debug(f"search_subcategories: Extracted {len(subcategories)} subcategories for '{category}'")
     
     # Limit number of subcategories if configured
     max_subcategories = config.search_config.get("max_subcategories_per_search", 10)
     if len(subcategories) > max_subcategories:
         subcategories = subcategories[:max_subcategories]
+        logger.debug(f"search_subcategories: Limited to {max_subcategories} subcategories")
     
+    # Log the discovered subcategories
+    if subcategories:
+        logger.debug(f"search_subcategories: Found subcategories for '{category}': {subcategories}")
+    else:
+        logger.debug(f"search_subcategories: No subcategories found for '{category}'")
+        
     return subcategories
 
 def search_compliance_requirements(category: str, jurisdiction: str = "", config: TaxonomyConfig = None) -> List[str]:

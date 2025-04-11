@@ -110,7 +110,7 @@ class TaxonomyConfig:
         "search_depth": 3,  # How deep to use search (1=top level only, 5=all levels)
         "max_subcategories_per_search": 10,
         "search_jurisdictions": True,  # Whether to search for jurisdiction-specific info
-        "api_key": os.environ.get("SERAPI_API_KEY", "")
+        "api_key": "f482c88e68dc958788cd251cbb4931b6703c46b078ddd296ab651c65411c2775"
     })
     
     def get_domain_preset(self, domain: str) -> Optional[Dict[str, Any]]:

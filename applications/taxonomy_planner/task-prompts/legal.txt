@@ -1,0 +1,10 @@
+Map legal requirements for all categories in the {{root_category}} taxonomy.
+
+Your task:
+1. Research applicable laws and regulations for each category
+2. Identify jurisdiction-specific legal requirements across {{jurisdictions}}
+3. Document legal considerations, restrictions, and obligations
+4. Consider licensing, permits, and regulatory frameworks
+5. Use both knowledge base and search tools to ensure current legal information
+
+Focus on legal aspects including statutes, regulations, and legal frameworks that apply to each category.

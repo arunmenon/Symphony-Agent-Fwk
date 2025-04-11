@@ -1,7 +1,7 @@
 """Pattern integration for Taxonomy Planner."""
 
 import asyncio
-from typing import Dict, Any, List, Optional, Callable, Set, Tuple
+from typing import Dict, Any, List, Optional
 
 from symphony import Symphony
 from symphony.patterns.base import Pattern
@@ -42,6 +42,10 @@ class SearchEnhancedExplorationPattern(RecursiveToolUsePattern):
         Returns:
             Exploration results
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Executing SearchEnhancedExplorationPattern for context: {context.get('category', 'Unknown')}")
+        
         # Get parameters from context
         category = context.get("category")
         parent = context.get("parent")
@@ -53,6 +57,17 @@ class SearchEnhancedExplorationPattern(RecursiveToolUsePattern):
         breadth_limit = context.get("breadth_limit", 10)  # Maximum subcategories per node
         strategy = context.get("strategy", "parallel")  # Exploration strategy
         initial_categories = context.get("initial_categories", [])  # Categories from planner
+        
+        # Log key parameters
+        logger.debug(f"Pattern execution - Category: {category}, Depth: {depth}/{max_depth}, Tools: {tools}")
+        
+        if not store:
+            logger.error("TaxonomyStore not provided in context!")
+            return {"category": category, "subcategories": []}
+        
+        if not agent:
+            logger.error("Agent not provided in context!")
+            return {"category": category, "subcategories": []}
         
         # Ensure required tools are available
         required_tools = ["search_subcategories", "search_category_info"]
@@ -97,14 +112,37 @@ class SearchEnhancedExplorationPattern(RecursiveToolUsePattern):
         )
         final_subcategories = self._extract_subcategories(validation_result)
         
-        # Step 7: Add validated subcategories to store
+        # Step 7: Gather enhanced information for the current category
+        enhanced_info_prompt = (
+            f"For the category '{category}', provide the following information in a structured format:\n"
+            f"1. A concise description (1-2 sentences)\n"
+            f"2. 2-3 typical enforcement examples or challenges\n"
+            f"3. 2-3 recent social media trends related to this category\n"
+            f"4. Risk level assessment (High, Medium, or Low) with brief justification\n"
+            f"5. 2-3 common detection methods"
+        )
+        
+        enhanced_info = await agent.execute(
+            enhanced_info_prompt,
+            use_tools=["search_category_info"]
+        )
+        
+        # Extract structured information from response
+        metadata = self._extract_enhanced_metadata(enhanced_info)
+        
+        # Step 8: Add validated subcategories to store with enhanced metadata
         for subcategory in final_subcategories:
             store.add_node(subcategory, parent=category)
+        
+        # Update the current category with enhanced metadata
+        current_node = store.get_node(category) or {}
+        current_node.update(metadata)
+        store.nodes[category] = current_node
         
         # Persist store incrementally
         store.save()
         
-        # Step 8: Explore subcategories based on strategy
+        # Step 9: Explore subcategories based on strategy
         if depth < max_depth:
             if strategy == "parallel":
                 # Parallel exploration
@@ -118,7 +156,8 @@ class SearchEnhancedExplorationPattern(RecursiveToolUsePattern):
         
         return {
             "category": category,
-            "subcategories": final_subcategories
+            "subcategories": final_subcategories,
+            **metadata  # Include enhanced metadata in response
         }
     
     async def _explore_parallel(self, subcategories: List[str], parent: str, context: Dict[str, Any], depth: int) -> None:
@@ -169,7 +208,7 @@ class SearchEnhancedExplorationPattern(RecursiveToolUsePattern):
             subcontext["depth"] = current_depth
             
             # Explore this subcategory
-            result = await self.execute(subcontext)
+            await self.execute(subcontext)
             
             # No need to add more subcategories to queue - already handled in execute
     
@@ -225,6 +264,109 @@ class SearchEnhancedExplorationPattern(RecursiveToolUsePattern):
         else:
             # Unknown format
             return []
+            
+    def _extract_enhanced_metadata(self, result: str) -> Dict[str, Any]:
+        """Extract enhanced metadata from agent response.
+        
+        Args:
+            result: Textual response from agent
+            
+        Returns:
+            Dictionary of extracted metadata
+        """
+        # Initialize with empty values
+        metadata = {
+            "description": "",
+            "enforcement_examples": [],
+            "social_media_trends": [],
+            "risk_level": "",
+            "detection_methods": []
+        }
+        
+        if not result or not isinstance(result, str):
+            return metadata
+        
+        # Split text into sections
+        lines = result.split("\n")
+        current_section = None
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Skip empty lines
+            if not line:
+                continue
+                
+            # Check for section headers
+            if "description" in line.lower() or line.startswith("1."):
+                current_section = "description"
+                # Extract description from this line if it contains a colon
+                if ":" in line:
+                    metadata["description"] = line.split(":", 1)[1].strip()
+                continue
+                
+            if "enforcement" in line.lower() or "example" in line.lower() or line.startswith("2."):
+                current_section = "enforcement_examples"
+                continue
+                
+            if "social media" in line.lower() or "trend" in line.lower() or line.startswith("3."):
+                current_section = "social_media_trends"
+                continue
+                
+            if "risk" in line.lower() or line.startswith("4."):
+                current_section = "risk_level"
+                # Extract risk level from this line if it contains a colon
+                if ":" in line:
+                    metadata["risk_level"] = line.split(":", 1)[1].strip()
+                # Also check for High/Medium/Low directly in the line
+                elif any(level in line for level in ["High", "Medium", "Low"]):
+                    for level in ["High", "Medium", "Low"]:
+                        if level in line:
+                            metadata["risk_level"] = level
+                            break
+                continue
+                
+            if "detection" in line.lower() or "method" in line.lower() or line.startswith("5."):
+                current_section = "detection_methods"
+                continue
+            
+            # Process content based on current section
+            if current_section == "description" and not metadata["description"]:
+                metadata["description"] = line
+                
+            elif current_section == "enforcement_examples":
+                # Check if line is a list item
+                if line.startswith(("-", "*", "•")) or (len(line) >= 2 and line[0].isdigit() and line[1] == "."):
+                    item = line[2:].strip() if line.startswith(("-", "*", "•")) else line[2:].strip()
+                    metadata["enforcement_examples"].append(item)
+                elif metadata["enforcement_examples"] and line:  # If not a list item but we're in this section
+                    metadata["enforcement_examples"].append(line)
+                    
+            elif current_section == "social_media_trends":
+                # Check if line is a list item
+                if line.startswith(("-", "*", "•")) or (len(line) >= 2 and line[0].isdigit() and line[1] == "."):
+                    item = line[2:].strip() if line.startswith(("-", "*", "•")) else line[2:].strip()
+                    metadata["social_media_trends"].append(item)
+                elif metadata["social_media_trends"] and line:  # If not a list item but we're in this section
+                    metadata["social_media_trends"].append(line)
+                    
+            elif current_section == "risk_level" and not metadata["risk_level"]:
+                metadata["risk_level"] = line
+                
+            elif current_section == "detection_methods":
+                # Check if line is a list item
+                if line.startswith(("-", "*", "•")) or (len(line) >= 2 and line[0].isdigit() and line[1] == "."):
+                    item = line[2:].strip() if line.startswith(("-", "*", "•")) else line[2:].strip()
+                    metadata["detection_methods"].append(item)
+                elif metadata["detection_methods"] and line:  # If not a list item but we're in this section
+                    metadata["detection_methods"].append(line)
+        
+        # Limit lists to reasonable sizes
+        for key in ["enforcement_examples", "social_media_trends", "detection_methods"]:
+            if len(metadata[key]) > 5:
+                metadata[key] = metadata[key][:5]
+                
+        return metadata
 
 def create_patterns() -> Dict[str, Pattern]:
     """Create patterns for taxonomy generation."""

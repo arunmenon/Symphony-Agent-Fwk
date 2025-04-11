@@ -1,0 +1,21 @@
+Explore the taxonomy tree for {{root_category}} with initial categories: {{initial_categories}}
+
+Your task:
+1. FIRST: For each category, use search_subcategories and search_category_info tools to gather up-to-date information
+2. Examine each category in depth, comparing your knowledge with search results
+3. Identify and validate subcategories through both knowledge base and external search
+4. Research compliance and regulatory considerations using search tools
+5. For each category and subcategory, enrich the following fields:
+   - description: A concise explanation of what this category encompasses
+   - enforcement_examples: Real-world examples of enforcement challenges or actions
+   - social_media_trends: Current or emerging trends related to this category online
+   - risk_level: Assessment of potential risk (High, Medium, Low)
+   - detection_methods: Approaches for identifying this category
+6. Ensure comprehensive coverage by combining internal knowledge with search results
+
+IMPORTANT: You MUST use the following search tools for accurate, current information:
+- search_knowledge_base("{{category}}")
+- search_subcategories("{{category}}")
+- search_category_info("{{category}}", "compliance")
+
+Focus on depth, breadth, and accuracy while exploring the taxonomy structure. Prefer search-based information over internal knowledge when there are conflicts. Your exploration should be domain-agnostic - don't make assumptions specific to particular industries unless they're part of the category definition.
