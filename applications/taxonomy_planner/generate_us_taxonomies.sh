@@ -11,12 +11,20 @@ SERAPI_API_KEY=${SERAPI_API_KEY:-"YOUR_SERAPI_API_KEY"}
 export OPENAI_API_KEY
 export SERAPI_API_KEY
 
+# Check if enhanced mode flag is provided
+ENHANCED=false
+if [ "$1" == "--enhanced" ] || [ "$1" == "-e" ]; then
+    ENHANCED=true
+    shift
+fi
+
 # Check if category is provided
 if [ -z "$1" ]
 then
     echo "Error: Root category must be specified"
-    echo "Usage: $0 <root_category>"
+    echo "Usage: $0 [--enhanced|-e] <root_category>"
     echo "Example: $0 'Alcohol'"
+    echo "Example with enhanced mode: $0 --enhanced 'Alcohol'"
     echo ""
     echo "Common regulatory domains:"
     echo "  - Alcohol"
@@ -28,13 +36,19 @@ then
     exit 1
 fi
 
-# Run the compliance taxonomy generator
-echo "Generating US compliance taxonomy for $1..."
-python generate_compliance_taxonomies.py "$1" \
-    --jurisdictions "USA" \
-    --max-depth 4 \
-    --breadth-limit 10 \
-    --strategy "parallel"
+# Set up command
+CMD="python generate_taxonomy.py \"$1\" --jurisdictions \"USA\" --max-depth 4 --breadth-limit 10 --strategy \"parallel\" --output-dir \"output/us_jurisdictions\""
+
+# Add enhanced flag if needed
+if [ "$ENHANCED" = true ]; then
+    echo "Generating ENHANCED US compliance taxonomy for $1 with additional fields..."
+    CMD="$CMD --enhanced"
+else
+    echo "Generating standard US compliance taxonomy for $1..."
+fi
+
+# Run the taxonomy generator
+eval $CMD
 
 if [ $? -eq 0 ]; then
     echo "Successfully generated taxonomy for $1"
