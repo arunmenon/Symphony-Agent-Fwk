@@ -5,6 +5,16 @@ offering a clean, user-friendly API with fluent interfaces.
 
 This module also re-exports all public API components for easy access.
 All exported components are considered part of the stable v0.1.0 API contract.
+
+IMPORTANT: Only import from this module! Do not import directly from 
+internal modules to ensure API stability and compatibility.
+
+Example:
+    # Correct way to import Symphony components
+    from symphony.api import Symphony, AgentBuilder, TaskBuilder
+
+    # DO NOT import directly from internal modules
+    # from symphony.core.registry import ServiceRegistry  # WRONG!
 """
 
 from symphony.utils.annotations import api_stable

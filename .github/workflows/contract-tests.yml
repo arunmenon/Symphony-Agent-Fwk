@@ -2,13 +2,13 @@ name: Symphony API Contract Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, core-* ]
     paths:
       - 'symphony/**'
       - 'tests/test_contract.py'
       - '.github/workflows/contract-tests.yml'
   pull_request:
-    branches: [ main ]
+    branches: [ main, core-* ]
     paths:
       - 'symphony/**'
       - 'tests/test_contract.py'
@@ -20,7 +20,7 @@ jobs:
     
     strategy:
       matrix:
-        python-version: ['3.9', '3.10']
+        python-version: ['3.9', '3.10', '3.11']
     
     steps:
       - uses: actions/checkout@v3
