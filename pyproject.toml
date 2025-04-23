@@ -23,10 +23,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Libraries :: Application Frameworks",
 ]
-[project.urls]
-Homepage = "https://github.com/arunmenon/Symphony-Agent-Fwk"
-"Bug Tracker" = "https://github.com/arunmenon/Symphony-Agent-Fwk/issues"
-
 dependencies = [
     "pydantic>=2.0.0",
     "tiktoken",
@@ -34,6 +30,10 @@ dependencies = [
     "mcp>=0.1.0",  # Model Context Protocol (MCP) official SDK
     "litellm>=1.0.0",  # Unified interface for multiple LLM providers
 ]
+
+[project.urls]
+Homepage = "https://github.com/arunmenon/Symphony-Agent-Fwk"
+"Bug Tracker" = "https://github.com/arunmenon/Symphony-Agent-Fwk/issues"
 
 [project.optional-dependencies]
 dev = [
