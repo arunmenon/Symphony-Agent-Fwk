@@ -6,7 +6,13 @@ ensuring consistent state across all entities in a Symphony instance.
 
 import json
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime
+# Handle Python < 3.11 which doesn't have UTC constant
+try:
+    from datetime import UTC
+except ImportError:
+    from datetime import timezone
+    UTC = timezone.utc
 from typing import Dict, Any, Optional, List, Tuple
 
 from .serialization import create_state_bundle

@@ -6,7 +6,13 @@ handle the complexities of circular references and non-serializable objects.
 """
 
 import json
-from datetime import datetime, UTC
+from datetime import datetime
+# Handle Python < 3.11 which doesn't have UTC constant
+try:
+    from datetime import UTC
+except ImportError:
+    from datetime import timezone
+    UTC = timezone.utc
 from typing import Dict, Any, Optional, List
 
 class EntityReference:

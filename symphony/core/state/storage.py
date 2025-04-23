@@ -9,7 +9,13 @@ import os
 import shutil
 import tempfile
 from typing import Optional, List
-from datetime import datetime, UTC
+from datetime import datetime
+# Handle Python < 3.11 which doesn't have UTC constant
+try:
+    from datetime import UTC
+except ImportError:
+    from datetime import timezone
+    UTC = timezone.utc
 import uuid
 
 from .serialization import StateBundle
