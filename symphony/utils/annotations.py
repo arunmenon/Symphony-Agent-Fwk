@@ -5,17 +5,12 @@ This module contains decorators and annotations for describing Symphony APIs.
 
 import functools
 import inspect
-from typing import Any, Callable, Dict, List, Optional, Set, TypeVar, Union, cast, overload
+from typing import Any, Callable, Dict, List, Optional, Set, TypeVar, Union, cast
 
 F = TypeVar('F', bound=Callable[..., Any])
 
 
-def api_stable(
-    obj: F,
-    *,
-    since_version: str = "0.1.0",
-    description: Optional[str] = None
-) -> F:
+def api_stable(obj=None, *, since_version: str = "0.1.0", description: Optional[str] = None):
     """Mark a function, class, or method as part of the stable API.
     
     This decorator is used to mark functions, classes, or methods that are part
@@ -26,13 +21,17 @@ def api_stable(
     This decorator does not change the behavior of the decorated object, it
     merely adds metadata that can be used for documentation and introspection.
     
+    This decorator can be used in two ways:
+    1. As a simple decorator: @api_stable
+    2. With arguments: @api_stable(since_version="0.2.0", description="...")
+    
     Args:
         obj: The function, class, or method to mark as stable
         since_version: The version when this API was stabilized
         description: Optional description of the API's purpose
     
     Returns:
-        The original object, unchanged
+        The original object, unchanged or a decorator function
     
     Example:
         ```python
@@ -45,29 +44,38 @@ def api_stable(
             pass
         ```
     """
-    # Store stability information in the object's __dict__ if possible
-    # or as an attribute otherwise
-    stability_info = {
-        "stable": True,
-        "since_version": since_version,
-        "description": description
-    }
+    def _mark_as_stable(obj):
+        # Store stability information in the object's __dict__ if possible
+        # or as an attribute otherwise
+        stability_info = {
+            "stable": True,
+            "since_version": since_version,
+            "description": description
+        }
+        
+        if inspect.isclass(obj) or inspect.isfunction(obj) or inspect.ismethod(obj):
+            if hasattr(obj, "__dict__") and isinstance(obj.__dict__, dict):
+                obj.__dict__["_api_info"] = stability_info
+            else:
+                setattr(obj, "_api_info", stability_info)
+                
+        return obj
     
-    if inspect.isclass(obj) or inspect.isfunction(obj) or inspect.ismethod(obj):
-        if hasattr(obj, "__dict__") and isinstance(obj.__dict__, dict):
-            obj.__dict__["_api_info"] = stability_info
-        else:
-            setattr(obj, "_api_info", stability_info)
-            
-    return obj
+    # If used as @api_stable without parentheses
+    if obj is not None:
+        return _mark_as_stable(obj)
+    
+    # If used as @api_stable(since_version=...) with parentheses
+    return _mark_as_stable
 
 
-@overload
-def api_stable(
-    since_version: str = "0.1.0",
-    description: Optional[str] = None
-) -> Callable[[F], F]:
-    ...
+# Remove the problematic overload, we'll use a different approach
+# @overload
+# def api_stable(
+#     since_version: str = "0.1.0",
+#     description: Optional[str] = None
+# ) -> Callable[[F], F]:
+#     ...
 
 
 def is_stable_api(obj: Any) -> bool:
