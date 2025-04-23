@@ -76,7 +76,15 @@ async def test_api_contract_minimal_dag(mock_litellm):
     
     # Step 2: Register a tool
     tool_registry = ToolRegistry()
-    tool_registry.register_tool("search", simple_search_tool)
+    
+    # Create a tool instance and register it
+    from symphony.tools.base import Tool
+    search_tool = Tool(
+        name="search",
+        description="A simple search tool",
+        function=simple_search_tool
+    )
+    ToolRegistry.register(search_tool)
     symphony.registry.register_service("tool_registry", tool_registry)
     
     # Step 3: Create two agents
