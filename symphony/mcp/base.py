@@ -7,7 +7,31 @@ allowing agents to leverage standardized context management.
 import asyncio
 from typing import Any, Dict, List, Optional, Protocol, Union
 
-from mcp.server.fastmcp import FastMCP, Context
+try:
+    from mcp.server.fastmcp import FastMCP, Context
+except ImportError:
+    # Define minimal MCP classes for when MCP is not installed
+    class Context:
+        """Minimal Context implementation when MCP is not available."""
+        def __init__(self, state=None):
+            self.state = state or {}
+    
+    class FastMCP:
+        """Minimal FastMCP implementation when MCP is not available."""
+        def __init__(self, app_name):
+            self.app_name = app_name
+            
+        def resource(self, path):
+            """Stub decorator for resource registration."""
+            def decorator(func):
+                return func
+            return decorator
+            
+        def tool(self, name=None, description=None):
+            """Stub decorator for tool registration."""
+            def decorator(func):
+                return func
+            return decorator
 from pydantic import BaseModel, Field
 
 from symphony.utils.types import Message

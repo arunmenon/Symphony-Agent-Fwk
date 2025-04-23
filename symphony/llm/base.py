@@ -4,7 +4,14 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
-from mcp.server.fastmcp import Context
+try:
+    from mcp.server.fastmcp import Context
+except ImportError:
+    # Define a minimal Context class for when MCP is not installed
+    class Context:
+        """Minimal Context implementation when MCP is not available."""
+        def __init__(self, state=None):
+            self.state = state or {}
 from symphony.utils.types import Message
 
 
