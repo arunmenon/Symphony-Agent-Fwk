@@ -27,7 +27,6 @@ dependencies = [
     "pydantic>=2.0.0",
     "tiktoken",
     "PyYAML>=6.0",
-    "mcp>=0.1.0",  # Model Context Protocol (MCP) official SDK
     "litellm>=1.0.0",  # Unified interface for multiple LLM providers
 ]
 
@@ -47,6 +46,7 @@ dev = [
 openai = ["openai>=1.0.0"]
 anthropic = ["anthropic"]
 cli = ["mcp[cli]"]  # MCP CLI tools for development
+mcp = ["mcp>=0.1.0"]  # Model Context Protocol (MCP) official SDK
 
 [tool.ruff]
 line-length = 100
