@@ -60,6 +60,53 @@ class AgentBuilder:
         )
         return self
     
+    # Compatibility methods matching the test API
+    def name(self, name: str) -> 'AgentBuilder':
+        """Set the agent name.
+        
+        Args:
+            name: Agent name
+            
+        Returns:
+            Self for chaining
+        """
+        if self.agent_config is None:
+            # Initialize with minimal defaults
+            self.agent_config = AgentConfig(
+                name=name,
+                role="",
+                instruction_template="You are a helpful assistant.",
+                capabilities=AgentCapabilities(expertise=[]),
+                metadata={}
+            )
+        else:
+            # Update existing config
+            self.agent_config.name = name
+        return self
+        
+    def description(self, description: str) -> 'AgentBuilder':
+        """Set the agent description/role.
+        
+        Args:
+            description: Agent description or role
+            
+        Returns:
+            Self for chaining
+        """
+        if self.agent_config is None:
+            # Initialize with minimal defaults
+            self.agent_config = AgentConfig(
+                name="Assistant",
+                role=description,
+                instruction_template="You are a helpful assistant.",
+                capabilities=AgentCapabilities(expertise=[]),
+                metadata={}
+            )
+        else:
+            # Update existing config
+            self.agent_config.role = description
+        return self
+    
     def with_capability(self, capability: str) -> 'AgentBuilder':
         """Add a capability to the agent.
         
@@ -129,6 +176,27 @@ class AgentBuilder:
         # Update agent config if it exists
         if self.agent_config:
             self.agent_config.metadata[key] = value
+            
+    def with_tools(self, tool_names: List[str]) -> 'AgentBuilder':
+        """Add tools to the agent.
+        
+        Args:
+            tool_names: List of tool names to add
+            
+        Returns:
+            Self for chaining
+        """
+        # Store tools in metadata
+        if 'tools' not in self.metadata_dict:
+            self.metadata_dict['tools'] = []
+            
+        self.metadata_dict['tools'].extend(tool_names)
+        
+        # Update agent config if it exists
+        if self.agent_config:
+            if 'tools' not in self.agent_config.metadata:
+                self.agent_config.metadata['tools'] = []
+            self.agent_config.metadata['tools'].extend(tool_names)
         
         return self
     

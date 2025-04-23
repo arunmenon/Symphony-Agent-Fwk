@@ -138,8 +138,9 @@ def reactive_agent(mock_llm_client, prompt_registry, mock_mcp_manager) -> Reacti
     """Create a reactive agent for testing."""
     config = AgentConfig(
         name="TestAgent",
-        agent_type="reactive",
-        description="A test agent"
+        role="Test Role",
+        description="A test agent",
+        instruction_template="You are a helpful assistant for testing purposes."
     )
     
     agent = ReactiveAgent(

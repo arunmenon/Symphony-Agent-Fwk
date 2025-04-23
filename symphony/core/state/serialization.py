@@ -6,10 +6,14 @@ handle the complexities of circular references and non-serializable objects.
 """
 
 import json
-import inspect
 from datetime import datetime
-import uuid
-from typing import Dict, Any, Optional, List, Set, Type, Tuple
+# Handle Python < 3.11 which doesn't have UTC constant
+try:
+    from datetime import UTC
+except ImportError:
+    from datetime import timezone
+    UTC = timezone.utc
+from typing import Dict, Any, Optional, List
 
 class EntityReference:
     """Reference to another entity in serialized state."""
@@ -50,7 +54,7 @@ class StateBundle:
         self.state_version = state_version
         self.data = data
         self.metadata = metadata or {}
-        self.created_at = created_at or datetime.utcnow().isoformat()
+        self.created_at = created_at or datetime.now(UTC).isoformat()
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -98,9 +102,13 @@ class StateEncoder:
     def encode_agent(agent) -> Dict[str, Any]:
         """Encode agent state."""
         # Extract basic properties
+        agent_config = agent.config.dict() if hasattr(agent.config, "dict") else agent.config
+        print(f"Encoding agent: {getattr(agent, 'id', str(id(agent)))}")
+        print(f"Agent config: {agent_config}")
+        
         state = {
             "id": agent.id,
-            "config": agent.config.dict() if hasattr(agent.config, "dict") else agent.config,
+            "config": agent_config,
             "type": agent.__class__.__name__,
         }
         
@@ -125,6 +133,7 @@ class StateEncoder:
                 for tool in agent.tools
             ]
         
+        print(f"Encoded agent state: {state}")
         return state
     
     @staticmethod
@@ -166,7 +175,7 @@ class StateEncoder:
                 encoded_items.append({
                     "key": key,
                     "value": value if isinstance(value, (str, int, float, bool, list, dict)) else str(value),
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(UTC).isoformat()
                 })
             except Exception as e:
                 # If encoding fails, store as string representation
@@ -174,7 +183,7 @@ class StateEncoder:
                     "key": key,
                     "value": f"<non-serializable: {type(value).__name__}>",
                     "error": str(e),
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(UTC).isoformat()
                 })
         return encoded_items
     

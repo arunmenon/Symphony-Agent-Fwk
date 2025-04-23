@@ -5,7 +5,14 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Set, Type, Union
 
-from mcp.server.fastmcp import Context
+try:
+    from mcp.server.fastmcp import Context
+except ImportError:
+    # Define a minimal Context class for when MCP is not installed
+    class Context:
+        """Minimal Context implementation when MCP is not available."""
+        def __init__(self):
+            self.state = {}
 from pydantic import BaseModel, Field
 
 from symphony.llm.base import LLMClient

@@ -410,3 +410,15 @@ class StepBuilder:
         
         else:
             raise ValueError("Step type not set. Use one of: agent(), processing_function(), condition(), add_step(), or loop_step()")
+
+
+# Create a proper class instead of an alias for API compatibility
+class WorkflowStepBuilder(StepBuilder):
+    """Builder for workflow steps.
+    
+    This class provides a fluent interface for building workflow steps,
+    making it easier to create complex steps with a clean, readable syntax.
+    
+    This is an alias of StepBuilder for backward compatibility.
+    """
+    pass

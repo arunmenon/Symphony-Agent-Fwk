@@ -1,0 +1,51 @@
+name: Symphony API Contract Tests
+
+on:
+  push:
+    branches: [ main, core-* ]
+    paths:
+      - 'symphony/**'
+      - 'tests/test_contract.py'
+      - '.github/workflows/contract-tests.yml'
+  pull_request:
+    branches: [ main, core-* ]
+    paths:
+      - 'symphony/**'
+      - 'tests/test_contract.py'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-asyncio
+          pip install -e .
+          
+      - name: Run contract tests
+        run: |
+          pytest -xvs tests/test_contract.py
+          
+      - name: Check API stability
+        if: ${{ always() }}
+        run: |
+          # Fail if any new API changes are not tagged with api_stable
+          if ! pytest -xvs tests/test_contract.py::test_api_stability_annotations; then
+            echo "::error::API Stability check failed! All public APIs must be tagged with @api_stable"
+            exit 1
+          fi

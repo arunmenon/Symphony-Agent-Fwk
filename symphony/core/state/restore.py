@@ -5,9 +5,8 @@ serialized state, handling the complexities of instantiating entities
 and resolving references between them.
 """
 
-import asyncio
 import logging
-from typing import Dict, List, Any, Optional, Set, Type, Tuple, Callable, Union
+from typing import Dict, List, Any, Optional, Tuple
 
 from .serialization import StateBundle, EntityReference
 
@@ -139,41 +138,87 @@ class AgentRestorer(EntityRestorer):
         try:
             # Get agent config from data
             agent_config = data.get("config", {})
-            agent_type = data.get("type", "ReactiveAgent")
             
             # Use the agent facade to create the agent
             if hasattr(context.symphony, "agents"):
-                # Create the agent
-                agent = await context.symphony.agents.create_agent(agent_config)
-                
-                # Restore interaction history if available
-                if "interaction_history" in data and hasattr(agent, "_interaction_history"):
-                    agent._interaction_history = data["interaction_history"]
-                
-                # Register agent with Symphony
-                context.register_entity("Agent", entity_id, agent)
-                
-                # Handle memory reference
-                if "memory" in data and isinstance(data["memory"], dict) and data["memory"].get("_type") == "entity_reference":
-                    memory_ref = EntityReference.from_dict(data["memory"])
-                    context.add_pending_reference(agent, "memory", memory_ref)
-                
-                # Handle tools references
-                if "tools" in data and isinstance(data["tools"], list):
-                    tool_refs = []
-                    for tool_data in data["tools"]:
-                        if isinstance(tool_data, dict) and tool_data.get("_type") == "entity_reference":
-                            tool_ref = EntityReference.from_dict(tool_data)
-                            tool_refs.append(tool_ref)
+                # Handle updated API signature
+                try:
+                    # Extract fields from agent config
+                    name = agent_config.get("name", f"Restored_{entity_id}")
+                    role = agent_config.get("role", "Restored agent")
+                    instruction_template = agent_config.get(
+                        "instruction_template", 
+                        "You are a restored agent from a Symphony checkpoint."
+                    )
+                    capabilities = agent_config.get("capabilities", {"expertise": ["general"]})
+                    model = agent_config.get("model", "default")
+                    metadata = agent_config.get("metadata", {})
                     
-                    # We'll handle tools differently since it's a list
-                    # For now, we'll just log that tools need to be restored
-                    if tool_refs:
-                        logger.info(f"Agent {entity_id} has {len(tool_refs)} tools to restore")
-                
-                return agent
+                    # Create the agent with the new API
+                    agent = await context.symphony.agents.create_agent(
+                        name=name,
+                        role=role,
+                        instruction_template=instruction_template,
+                        capabilities=capabilities,
+                        model=model,
+                        metadata=metadata
+                    )
+                    
+                    # Restore interaction history if available
+                    if "interaction_history" in data and hasattr(agent, "_interaction_history"):
+                        agent._interaction_history = data["interaction_history"]
+                    
+                    # Register agent with Symphony
+                    context.register_entity("Agent", entity_id, agent)
+                    
+                    # Handle memory reference
+                    if "memory" in data and isinstance(data["memory"], dict) and data["memory"].get("_type") == "entity_reference":
+                        memory_ref = EntityReference.from_dict(data["memory"])
+                        context.add_pending_reference(agent, "memory", memory_ref)
+                    
+                    # Handle tools references
+                    if "tools" in data and isinstance(data["tools"], list):
+                        tool_refs = []
+                        for tool_data in data["tools"]:
+                            if isinstance(tool_data, dict) and tool_data.get("_type") == "entity_reference":
+                                tool_ref = EntityReference.from_dict(tool_data)
+                                tool_refs.append(tool_ref)
+                        
+                        # We'll handle tools differently since it's a list
+                        # For now, we'll just log that tools need to be restored
+                        if tool_refs:
+                            logger.info(f"Agent {entity_id} has {len(tool_refs)} tools to restore")
+                    
+                    # Save the agent in the repository so get_all_agents() can find it
+                    try:
+                        # Use AgentFacade to create a new agent with the same properties
+                        # Since we need a proper AgentConfig object that will pass validation
+                        from symphony.core.agent_config import AgentConfig, AgentCapabilities
+                        
+                        # Create a new agent config from the restored data
+                        agent_config = AgentConfig(
+                            id=entity_id,
+                            name=name,
+                            role=role,
+                            instruction_template=instruction_template,
+                            capabilities=AgentCapabilities(expertise=capabilities.get("expertise", [])),
+                            model=model,
+                            metadata=metadata
+                        )
+                        
+                        # Save it to the repository
+                        agent_id = await context.symphony.agents.save_agent(agent_config)
+                        logger.info(f"Saved restored agent with ID: {agent_id}")
+                    except Exception as save_error:
+                        logger.warning(f"Failed to save agent to repository: {save_error}")
+                    
+                    logger.info(f"Successfully restored Agent {entity_id} with name {name}")
+                    return agent
+                except Exception as specific_error:
+                    logger.error(f"Error restoring agent with new API: {specific_error}")
+                    raise RestorationError(f"Failed to restore Agent {entity_id}: {specific_error}")
             else:
-                raise RestorationError(f"Symphony instance does not have agents facade")
+                raise RestorationError("Symphony instance does not have agents facade")
                 
         except Exception as e:
             raise RestorationError(f"Failed to restore Agent {entity_id}: {e}")
@@ -215,7 +260,7 @@ class MemoryRestorer(EntityRestorer):
                 
                 return memory
             else:
-                raise RestorationError(f"Symphony instance does not support memory creation")
+                raise RestorationError("Symphony instance does not support memory creation")
                 
         except Exception as e:
             raise RestorationError(f"Failed to restore Memory {entity_id}: {e}")

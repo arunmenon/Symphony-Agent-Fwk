@@ -34,34 +34,32 @@ async def run_example():
         
         # Create agents with different configurations
         print("Creating agents in first instance...")
-        agent1 = await symphony1.agents.create_agent({
-            "name": "Agent1",
-            "description": "First agent example",
-            "agent_type": "reactive"
-        }, llm_client=llm_client)
+        agent1 = await symphony1.agents.create_agent(
+            name="Agent1",
+            role="First agent example",
+            instruction_template="You are a reactive agent for testing checkpoints.",
+            capabilities={"expertise": ["testing", "state management"]}
+        )
+        agent1_id = await symphony1.agents.save_agent(agent1)
         
-        agent2 = await symphony1.agents.create_agent({
-            "name": "Agent2", 
-            "description": "Second agent example",
-            "agent_type": "planning"
-        }, llm_client=llm_client)
+        agent2 = await symphony1.agents.create_agent(
+            name="Agent2",
+            role="Second agent example",
+            instruction_template="You are a planning agent for testing checkpoints.",
+            capabilities={"expertise": ["planning", "state management"]}
+        )
+        agent2_id = await symphony1.agents.save_agent(agent2)
         
-        # Create memory and assign to agent
-        memory = await symphony1.agents.create_memory("conversation")
-        agent1.memory = memory
-        
-        # Add some data to memory
-        if hasattr(memory, "items"):
-            memory.items["greeting"] = "Hello, world!"
-            memory.items["favorite_color"] = "blue"
+        # For this example, we'll focus just on agents and workflows
+        # Memory handling may need to be updated based on current API
         
         # Create a workflow
         workflow = (symphony1.build_workflow()
                    .create("TestWorkflow", "Example workflow for checkpoint/restore")
-                   .add_task("Task1", "First task", {"agent_id": agent1.id})
-                   .add_task("Task2", "Second task", {"agent_id": agent2.id})
+                   .add_task("Task1", "First task", {"agent_id": agent1_id})
+                   .add_task("Task2", "Second task", {"agent_id": agent2_id})
                    .build())
-        workflow_id = await symphony1.workflows.save_workflow_definition(workflow)
+        workflow_id = await symphony1.workflows.save_workflow(workflow)
         
         # Create a checkpoint
         print("Creating checkpoint of first instance state...")
@@ -87,27 +85,30 @@ async def run_example():
         agents = await symphony2.agents.get_all_agents()
         print(f"Restored {len(agents)} agents:")
         for agent in agents:
-            print(f"  - {agent.config.name}: {agent.config.description}")
-            if hasattr(agent, "memory") and agent.memory:
-                print(f"    Memory: {agent.memory}")
-                if hasattr(agent.memory, "items"):
-                    print(f"    Memory items: {agent.memory.items}")
+            if hasattr(agent, 'name'):
+                print(f"  - {agent.name}: {getattr(agent, 'role', 'No role')}")
+            else:
+                print(f"  - Agent ID: {agent.id}")
         
-        # Verify workflows were restored
-        workflows = await symphony2.workflows.get_all_workflows()
-        print(f"\nRestored {len(workflows)} workflows:")
-        for wf in workflows:
-            print(f"  - {wf.name}: {wf.description}")
+        # Verify workflow was restored
+        workflow = await symphony2.workflows.get_workflow(workflow_id) 
+        print("\nRestored workflow:")
+        if workflow:
+            print(f"  - {workflow.name}: {workflow.description}")
+        else:
+            print("  - No workflow found")
         
         # Part 3: Continue working with the restored state
         print("\nContinuing work with restored state...")
         
         # Add a new agent
-        agent3 = await symphony2.agents.create_agent({
-            "name": "Agent3",
-            "description": "Added after restore",
-            "agent_type": "reactive"
-        }, llm_client=llm_client)
+        agent3 = await symphony2.agents.create_agent(
+            name="Agent3",
+            role="Added after restore",
+            instruction_template="You are an agent created after checkpoint restoration.",
+            capabilities={"expertise": ["testing"]}
+        )
+        agent3_id = await symphony2.agents.save_agent(agent3)
         
         # Create a new checkpoint
         print("Creating checkpoint of modified state...")
