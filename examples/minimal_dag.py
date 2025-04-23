@@ -15,7 +15,8 @@ import asyncio
 import sys
 from typing import Dict, Any
 
-from symphony import Symphony
+from symphony.api import Symphony
+from symphony.tools.base import ToolRegistry
 
 
 # Define a simple tool for demonstration
@@ -31,10 +32,10 @@ async def run_minimal_dag():
     await symphony.setup(state_dir=".symphony_minimal_dag_state")
     
     # Step 2: Register a tool
-    tool_register = {
-        "search": simple_search_tool
-    }
-    symphony._custom_tools = tool_register
+    # Create and register tool registry
+    tool_registry = ToolRegistry()
+    tool_registry.register_tool("search", simple_search_tool)
+    symphony.registry.register_service("tool_registry", tool_registry)
     
     # Step 3: Create two agents
     planner_agent = (symphony.build_agent()

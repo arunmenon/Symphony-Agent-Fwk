@@ -182,15 +182,33 @@ def test_api_stability_annotations():
     assert is_stable_api(Symphony), "Symphony class should be marked as stable"
     
     # Check all items in __all__
+    missing_decorators = []
+    missing_version_info = []
     for name in api.__all__:
         if hasattr(api, name):
             item = getattr(api, name)
-            assert is_stable_api(item), f"{name} should be marked as stable"
             
-            # Check that it has version info
+            # Check for decorator
+            if not is_stable_api(item):
+                missing_decorators.append(name)
+                continue
+            
+            # Check for version info
             info = get_api_info(item)
-            assert "since_version" in info, f"{name} should have version info"
-            assert info["since_version"] == "0.1.0", f"{name} should be version 0.1.0"
+            if "since_version" not in info or info["since_version"] != "0.1.0":
+                missing_version_info.append(name)
+    
+    # Fail test with detailed report if any issues found
+    if missing_decorators or missing_version_info:
+        error_msg = []
+        if missing_decorators:
+            error_msg.append(f"Components missing @api_stable decorator: {', '.join(missing_decorators)}")
+        if missing_version_info:
+            error_msg.append(f"Components missing proper version info: {', '.join(missing_version_info)}")
+        assert False, "\n".join(error_msg)
+            
+    # All passed
+    assert True, "All API components are properly decorated with @api_stable"
 
 
 if __name__ == "__main__":
