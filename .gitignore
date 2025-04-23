@@ -56,3 +56,21 @@ data/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# MacOS
+.DS_Store
+
+# Logging and output
+*.log
+traces/
+*.jsonl
+
+# App-specific
+applications/taxonomy_planner/output/**/*.json
+applications/taxonomy_planner/output/**/*.txt
+applications/taxonomy_planner/storage/
+applications/taxonomy_planner/traces/
+applications/taxonomy_planner/search_result_*.json
+test_output/
+debug_taxonomy.log
+search_calls.log
