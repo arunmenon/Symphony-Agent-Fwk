@@ -23,14 +23,14 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Libraries :: Application Frameworks",
 ]
-urls = {
-    "Homepage" = "https://github.com/arunmenon/Symphony-Agent-Fwk",
-    "Bug Tracker" = "https://github.com/arunmenon/Symphony-Agent-Fwk/issues",
-}
+[project.urls]
+Homepage = "https://github.com/arunmenon/Symphony-Agent-Fwk"
+"Bug Tracker" = "https://github.com/arunmenon/Symphony-Agent-Fwk/issues"
+
 dependencies = [
     "pydantic>=2.0.0",
     "tiktoken",
-    "PyYAML",
+    "PyYAML>=6.0",
     "mcp>=0.1.0",  # Model Context Protocol (MCP) official SDK
     "litellm>=1.0.0",  # Unified interface for multiple LLM providers
 ]
@@ -73,3 +73,6 @@ markers = [
     "orchestration: Tests related to agent orchestration",
     "tools: Tests related to tools",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["symphony"]
