@@ -6,12 +6,10 @@ atomic operations to ensure state consistency.
 """
 
 import os
-import json
 import shutil
 import tempfile
-import asyncio
-from typing import Optional, Dict, Any, List, Tuple
-from datetime import datetime
+from typing import Optional, List
+from datetime import datetime, UTC
 import uuid
 
 from .serialization import StateBundle
@@ -71,7 +69,7 @@ class Transaction:
             try:
                 if os.path.exists(tmp_path):
                     os.unlink(tmp_path)
-            except:
+            except Exception:
                 pass
             raise TransactionError(f"Failed to store {key}: {e}")
     
@@ -87,7 +85,7 @@ class Transaction:
             # Create marker file to indicate transaction is ready
             ready_file = os.path.join(self.temp_dir, ".ready")
             with open(ready_file, 'w') as f:
-                f.write(datetime.utcnow().isoformat())
+                f.write(datetime.now(UTC).isoformat())
             
             # Move all files to their final locations
             for op, key in self.operations:
@@ -175,7 +173,7 @@ class FileStorageProvider:
             try:
                 if os.path.exists(tmp_path):
                     os.unlink(tmp_path)
-            except:
+            except Exception:
                 pass
             raise StorageError(f"Failed to store {key}: {e}")
     

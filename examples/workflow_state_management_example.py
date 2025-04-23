@@ -32,30 +32,31 @@ async def run_example():
         
         # Create an agent
         print("Creating agent...")
-        agent_config = AgentConfig(
+        agent = await symphony.agents.create_agent(
             name="WorkflowAgent",
-            description="Agent for workflow example",
-            agent_type="reactive"
+            role="Workflow Example Agent",
+            instruction_template="You are a workflow agent that helps demonstrate state management.",
+            capabilities={"expertise": ["workflow", "state management"]}
         )
-        agent = await symphony.agents.create_agent(agent_config, llm_client=llm_client)
+        agent_id = await symphony.agents.save_agent(agent)
         
         # Create a workflow with multiple steps to demonstrate checkpointing
         print("Creating multi-step workflow...")
         workflow = (symphony.build_workflow()
                    .create("CheckpointWorkflow", "Workflow demonstrating automatic checkpoints")
-                   .add_task("Step1", "First step", {"agent_id": agent.id})
-                   .add_task("Step2", "Second step", {"agent_id": agent.id})
-                   .add_task("Step3", "Third step", {"agent_id": agent.id})
-                   .add_task("Step4", "Fourth step", {"agent_id": agent.id})
-                   .add_task("Step5", "Fifth step", {"agent_id": agent.id})
-                   .add_task("Step6", "Sixth step", {"agent_id": agent.id})
+                   .add_task("Step1", "First step", {"agent_id": agent_id})
+                   .add_task("Step2", "Second step", {"agent_id": agent_id})
+                   .add_task("Step3", "Third step", {"agent_id": agent_id})
+                   .add_task("Step4", "Fourth step", {"agent_id": agent_id})
+                   .add_task("Step5", "Fifth step", {"agent_id": agent_id})
+                   .add_task("Step6", "Sixth step", {"agent_id": agent_id})
                    .build())
         
-        workflow_id = await symphony.workflows.save_workflow_definition(workflow)
+        workflow_id = await symphony.workflows.save_workflow(workflow)
         
         # Execute workflow - this will automatically create checkpoints
         print("\nExecuting workflow (automatic checkpoints will be created)...")
-        workflow_result = await symphony.workflows.execute_workflow_by_id(workflow_id)
+        workflow_result = await symphony.workflows.execute_workflow(await symphony.workflows.get_workflow(workflow_id))
         
         print(f"Workflow completed with status: {workflow_result.status}")
         
@@ -70,19 +71,19 @@ async def run_example():
         print("\nCreating workflow that will simulate failure...")
         failing_workflow = (symphony.build_workflow()
                          .create("FailingWorkflow", "Workflow that simulates failure")
-                         .add_task("Step1", "First step", {"agent_id": agent.id})
-                         .add_task("Step2", "Second step", {"agent_id": agent.id})
+                         .add_task("Step1", "First step", {"agent_id": agent_id})
+                         .add_task("Step2", "Second step", {"agent_id": agent_id})
                          .add_task("FailingStep", "Step that will fail",
-                                  {"agent_id": agent.id, "should_fail": True})
-                         .add_task("Step4", "Never executed", {"agent_id": agent.id})
+                                  {"agent_id": agent_id, "should_fail": True})
+                         .add_task("Step4", "Never executed", {"agent_id": agent_id})
                          .build())
         
-        failing_workflow_id = await symphony.workflows.save_workflow_definition(failing_workflow)
+        failing_workflow_id = await symphony.workflows.save_workflow(failing_workflow)
         
         # Execute the failing workflow - this will create checkpoints including an error checkpoint
         print("\nExecuting failing workflow...")
         try:
-            failing_result = await symphony.workflows.execute_workflow_by_id(failing_workflow_id)
+            failing_result = await symphony.workflows.execute_workflow(await symphony.workflows.get_workflow(failing_workflow_id))
             print(f"Workflow completed with status: {failing_result.status}")
         except Exception as e:
             print(f"Workflow execution failed as expected: {e}")

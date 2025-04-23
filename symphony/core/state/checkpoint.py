@@ -4,15 +4,13 @@ This module provides checkpoint creation and restoration capabilities,
 ensuring consistent state across all entities in a Symphony instance.
 """
 
-import os
 import json
-import asyncio
 import uuid
-from datetime import datetime
-from typing import Dict, Any, Optional, List, Set, Type, Tuple
+from datetime import datetime, UTC
+from typing import Dict, Any, Optional, List, Tuple
 
-from .serialization import StateBundle, create_state_bundle
-from .storage import FileStorageProvider, Transaction, StorageError
+from .serialization import create_state_bundle
+from .storage import FileStorageProvider
 
 
 class CheckpointError(Exception):
@@ -96,19 +94,32 @@ class CheckpointManager:
         """
         entities = []
         
+        print(f"Discovering entities in Symphony instance: {type(symphony_instance).__name__}")
+        
         # Discover agents
         if hasattr(symphony_instance, "agents"):
+            print(f"Symphony has agents facade: {type(symphony_instance.agents).__name__}")
             agents = []
             
             # Handle different agent collection patterns
             if hasattr(symphony_instance.agents, "get_all_agents"):
+                print("Using get_all_agents() method")
                 agents = await symphony_instance.agents.get_all_agents()
+                print(f"Found {len(agents)} agents via get_all_agents()")
             elif hasattr(symphony_instance.agents, "agents"):
+                print("Using agents.agents attribute")
                 agents = symphony_instance.agents.agents.values()
+                print(f"Found {len(agents)} agents via agents.agents")
             elif hasattr(symphony_instance, "_agents"):
+                print("Using _agents attribute")
                 agents = symphony_instance._agents.values()
+                print(f"Found {len(agents)} agents via _agents")
+            else:
+                print("No known agent collection mechanism found")
                 
+            print(f"Total agents found: {len(agents)}")    
             for agent in agents:
+                print(f"Adding agent to checkpoint: {getattr(agent, 'id', str(id(agent)))}")
                 entities.append(("Agent", agent))
         
         # Discover memories
@@ -171,7 +182,7 @@ class CheckpointManager:
         # Create checkpoint object
         checkpoint = Checkpoint(
             checkpoint_id=checkpoint_id,
-            created_at=datetime.utcnow().isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
             name=name,
             metadata=metadata or {}
         )
@@ -310,15 +321,25 @@ class CheckpointManager:
         if not checkpoint:
             raise CheckpointError(f"Checkpoint {checkpoint_id} not found")
         
+        print(f"Found checkpoint: {checkpoint_id} with {len(checkpoint.entities)} entities")
+        for i, entity in enumerate(checkpoint.entities, 1):
+            print(f"Entity {i}: {entity['entity_type']} {entity['entity_id']}")
+        
         try:
             # Import RestoreManager (here to avoid circular imports)
             from .restore import restore_manager, RestorationError
             
             # Use restore manager to restore from checkpoint
-            await restore_manager.restore_from_checkpoint(
+            restoration_context = await restore_manager.restore_from_checkpoint(
                 checkpoint.to_dict(),
                 symphony_instance
             )
+            
+            # Print restored entities
+            for entity_type, entities in restoration_context.entities.items():
+                print(f"Restored {len(entities)} entities of type {entity_type}")
+                for entity_id, entity in entities.items():
+                    print(f"  - {entity_id}: {getattr(entity, 'name', str(entity))}")
             
             print(f"Restored Symphony state from checkpoint: {checkpoint_id}")
             
@@ -327,6 +348,8 @@ class CheckpointManager:
         except ImportError as e:
             raise CheckpointError(f"Restoration module not available: {e}")
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             raise CheckpointError(f"Unexpected error restoring checkpoint {checkpoint_id}: {e}")
     
     async def delete_checkpoint(self, checkpoint_id: str) -> bool:
