@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
-name = "symphony"
-version = "0.1.0"
+name = "symphony-core"
+version = "0.1.0a0"
 description = "Next-Generation Agentic Framework"
 readme = "README.md"
 authors = [
