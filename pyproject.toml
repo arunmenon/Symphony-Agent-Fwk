@@ -28,6 +28,7 @@ dependencies = [
     "tiktoken",
     "PyYAML>=6.0",
     "litellm>=1.0.0",  # Unified interface for multiple LLM providers
+    "numpy>=1.20.0",   # For numeric operations, especially in memory components
 ]
 
 [project.urls]
