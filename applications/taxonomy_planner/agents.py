@@ -2,7 +2,8 @@
 
 from typing import Dict, Any
 
-from symphony import Symphony
+# Use stable API imports
+from symphony.api import Symphony
 from config import TaxonomyConfig
 
 def create_agents(symphony: Symphony, config: TaxonomyConfig) -> Dict[str, Any]:

@@ -12,9 +12,9 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, Optional, List, Callable
 
-from symphony.core.plugin import LLMPlugin
-from symphony.core.container import Container
-from symphony.core.events import EventBus, Event, EventType
+from symphony.api import LLMPlugin
+from symphony.api import Container
+from symphony.api import EventBus, Event, EventType
 
 logger = logging.getLogger(__name__)
 

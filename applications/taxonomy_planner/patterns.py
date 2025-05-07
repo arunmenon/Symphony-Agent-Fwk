@@ -3,13 +3,14 @@
 import asyncio
 from typing import Dict, Any, List, Optional
 
-from symphony import Symphony
-from symphony.patterns.base import Pattern
-from symphony.patterns.reasoning.chain_of_thought import ChainOfThoughtPattern
-from symphony.patterns.tool_usage.recursive_tool_use import RecursiveToolUsePattern
-from symphony.patterns.multi_agent.expert_panel import ExpertPanelPattern
-from symphony.patterns.tool_usage.verify_execute import VerifyExecutePattern
-from symphony.patterns.learning.reflection import ReflectionPattern
+# Use stable API imports
+from symphony.api import Symphony
+from symphony.api import Pattern
+from symphony.api import ChainOfThoughtPattern
+from symphony.api import RecursiveToolUsePattern
+from symphony.api import ExpertPanelPattern
+from symphony.api import VerifyExecutePattern
+from symphony.api import ReflectionPattern
 
 class SearchEnhancedExplorationPattern(RecursiveToolUsePattern):
     """Pattern for taxonomy exploration enhanced with search capabilities.

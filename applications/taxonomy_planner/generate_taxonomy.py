@@ -60,10 +60,10 @@ DEFAULT_STORAGE_DIR = "storage"
 
 # Default models
 DEFAULT_MODELS = {
-    "planner": "o1-mini",      # Advanced reasoning model for complex planning
-    "explorer": "gpt-4o-mini", # Cost-effective for exploration tasks
-    "compliance": "gpt-4o-mini", # Good for structured compliance mapping
-    "legal": "gpt-4o-mini"       # Good for structured legal mapping
+    "planner": "anthropic/claude-3-opus",      # Advanced reasoning model for complex planning
+    "explorer": "openai/gpt-4o-mini", # Cost-effective for exploration tasks
+    "compliance": "openai/gpt-4o-mini", # Good for structured compliance mapping
+    "legal": "openai/gpt-4o-mini"       # Good for structured legal mapping
 }
 
 # Default parameters
@@ -169,7 +169,7 @@ async def generate_compliance_taxonomy(
     
     # Import Symphony for enhanced mode
     if enhanced:
-        from symphony import Symphony
+        from symphony.api import Symphony
         
     try:
         if enhanced:
@@ -509,8 +509,8 @@ async def generate_enhanced_taxonomy(
     Returns:
         The generated enhanced taxonomy
     """
-    # Import Symphony
-    from symphony import Symphony
+    # Import Symphony from stable API
+    from symphony.api import Symphony
     
     logger.info(f"Generating enhanced taxonomy for {category} with additional fields...")
     logger.info(f"Jurisdictions: {', '.join(jurisdictions)}")

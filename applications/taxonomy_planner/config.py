@@ -21,19 +21,19 @@ class TaxonomyConfig:
     agent_configs: Dict[str, Dict[str, Any]] = field(default_factory=lambda: {
         "planner": {
             "preset": "planning",
-            "model": "gpt-4",
+            "model": "openai/gpt-4o",  # Updated to current model
         },
         "explorer": {
             "preset": "domain_expert",
-            "model": "gpt-4",
+            "model": "openai/gpt-4o",  # Updated to current model
         },
         "compliance": {
             "preset": "compliance",
-            "model": "gpt-4",
+            "model": "openai/gpt-4o",  # Updated to current model
         },
         "legal": {
             "preset": "legal",
-            "model": "gpt-4",
+            "model": "openai/gpt-4o",  # Updated to current model
         }
     })
     
@@ -67,7 +67,7 @@ class TaxonomyConfig:
             return self.agent_configs[agent_name]["model"]
             
         # Default fallback
-        return "gpt-4"
+        return "openai/gpt-4o"
     
     # Pattern configurations
     pattern_configs: Dict[str, Dict[str, Any]] = field(default_factory=lambda: {

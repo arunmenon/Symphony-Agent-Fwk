@@ -7,7 +7,9 @@ import re
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-from symphony import Symphony
+# Use stable API imports
+from symphony.api import Symphony
+# Use direct imports for running as script
 from config import TaxonomyConfig
 from agents import create_agents
 from patterns import create_patterns
@@ -367,7 +369,7 @@ class TaxonomyPlanner:
         }
         
         try:
-            # Execute workflow with automatic checkpointing and resumption
+            # Execute workflow with automatic checkpointing and resumption using stable API
             workflow_result = await self.symphony.workflows.execute_workflow(
                 workflow=self.workflow_definition,
                 initial_context=initial_context,
